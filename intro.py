@@ -175,12 +175,14 @@ def display_overview():
             yaxis=dict(
                 range=[total_teams_league +0.5, 0.5], #block the standings number
                 title='Position in standings',
-                dtick=1
+                dtick=1,
+                fixedrange=True
             ),
             xaxis=dict(
                 range= [0.8, max_round_played + 2.0],
                 title='Round',
-                dtick=1
+                dtick=1,
+                fixedrange=True
             ),
             showlegend=False,
             height=700
