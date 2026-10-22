@@ -53,28 +53,61 @@ def display_overview():
     st.write('---')
     st.subheader(':orange[Season Overview]')
 
-    selected_season = st.selectbox(
-        'Select a season:',
-        options=[2026, 2025, 2024, 2023, 2022]
-        )
+    #creating the selection menus
+    col_sel1, col_sel2 = st.columns(2)
+
+    with col_sel1:
+        selected_season = st.selectbox(
+            'Select a season:',
+            options=[2026, 2025, 2024, 2023, 2022]
+            )
 
     #recalling the cached data
     with st.spinner("Downloading EuroLeague Data..."):
         df_teams, df_player_all = load_data(selected_season)
+    
+    #creating dynamic list
+    team_list = ['All Teams'] + sorted(df_teams['club.name'].dropna().unique().tolist())
+
+    with col_sel2:
+        selected_team = st.selectbox(
+            'Select a Team:',
+            options = team_list
+        )
+
 
     #KPI
 
-    total_teams = len(df_teams)
+    total_teams_league = len(df_teams) #obtaining the teams total number
 
-    total_games = int(total_teams * (total_teams - 1))
+    if selected_team == 'All Teams':
+        display_teams = total_teams_league
+        display_games = int(total_teams_league * (total_teams_league - 1))
+        df_player_active = df_player_all.copy()
+    else:
+        display_teams = 1
+        display_games= (total_teams_league -1) *2 #games played by 1 team
 
-    total_players = len(df_player_all)
+        #searching team column in the player dataset
+        p_team_col = None
+        for col in df_player_all.columns:
+            if 'club' in col.lower():
+                p_team_col = col
+                break
 
-    col_3pm_list = [ col for col in df_player_all.columns if 'threepointersmade' in col.lower()]
+        if p_team_col is not None:
+            df_player_active = df_player_all[df_player_all[ p_team_col] == selected_team].copy()
+        else:
+            df_player_active = df_player_all.copy()
+
+    total_players = len(df_player_active)
+
+  
+    col_3pm_list = [ col for col in df_player_active.columns if 'threepointersmade' in col.lower()]
 
     if len(col_3pm_list):
         col_3pm = col_3pm_list[0]
-        total_threes = int (pd.to_numeric(df_player_all[col_3pm], errors='coerce').sum())
+        total_threes = int (pd.to_numeric(df_player_active[col_3pm], errors='coerce').sum())
     else: 
         total_threes = 'N/A'
 
@@ -83,10 +116,10 @@ def display_overview():
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(label="Total Teams", value=total_teams)
+        st.metric(label="Total Teams", value= display_teams)
 
     with col2:
-        st.metric(label="Total Games", value=total_games)
+        st.metric(label="Total Games", value=display_games)
 
     with col3:
         st.metric(label="Total Players", value=total_players)
@@ -101,10 +134,14 @@ def display_overview():
     st.subheader(':orange[Standings Evolution Over the Season]')
 
     with st.spinner("Downloading EuroLeague Standings Trend Data..."): 
-        df_trend = load_standings_trend(selected_season, total_teams)
+        df_trend = load_standings_trend(selected_season, total_teams_league)
 
     if not df_trend.empty:
-        #searching team name
+        #graph filter
+        if selected_team == 'All Teams':
+            df_trend_active = df_trend.copy()
+        else:
+            df_trend_active = df_trend[df_trend['club.name']==selected_team].copy()
         team_col = 'club.name'
         rank_col = 'position'
 
@@ -112,18 +149,25 @@ def display_overview():
         max_round_played = df_trend['Round'].max()
 
         #Columns cointaining the team name
-        df_trend['Line_Label'] = df_trend.apply(
+        df_trend_active['Line_Label'] = df_trend_active.apply(
             lambda x: str(x[ 'club.abbreviatedName']) if x['Round'] == max_round_played else None, axis=1   
         )
 
         #creating the graph
+
+        #deciding the color by the filter
+        if selected_team == 'All Teams':
+            chart_colors = px.colors.qualitative.Plotly
+        else:
+            chart_colors = ['orange']
         fig = px.line(
-            df_trend, 
+            df_trend_active, 
             x='Round',
             y=rank_col,
             color=team_col,
             text = 'Line_Label',
             markers=True,
+            color_discrete_sequence = chart_colors
         )
 
         #moving it to the right to be readable
@@ -132,7 +176,7 @@ def display_overview():
         #Formatting the axes
         fig.update_layout(
             yaxis=dict(
-                range=[total_teams +0.5, 0.5], #block the standings number
+                range=[total_teams_league +0.5, 0.5], #block the standings number
                 title='Position in standings',
                 dtick=1
             ),
