@@ -88,17 +88,14 @@ def display_overview():
         display_teams = 1
         display_games= (total_teams_league -1) *2 #games played by 1 team
 
-        #searching team column in the player dataset
-        p_team_col = None
-        for col in df_player_all.columns:
-            if 'club' in col.lower():
-                p_team_col = col
-                break
+        #gain the team code from standing dataset
+        team_code = df_teams[df_teams['club.name']== selected_team]['club.code'].values[0]
 
-        if p_team_col is not None:
-            df_player_active = df_player_all[df_player_all[ p_team_col] == selected_team].copy()
-        else:
-            df_player_active = df_player_all.copy()
+        #filter players using team code
+        df_player_active = df_player_all[df_player_all['player.team.code']== team_code].copy()
+
+
+        
 
     total_players = len(df_player_active)
 
