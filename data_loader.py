@@ -3,6 +3,8 @@ import pandas as pd
 from euroleague_api.standings import Standings
 from euroleague_api.player_stats import PlayerStats
 import concurrent.futures 
+from euroleague_api.team_stats import TeamStats
+
 
 #Loading data with caching
 @st.cache_data
@@ -71,3 +73,26 @@ def load_standings_trend(season, total_teams):
         final_df = final_df.sort_values(by=['Round', 'position']).reset_index(drop=True)
         return final_df
     else: return pd.DataFrame()
+
+
+#Loading team data
+@st.cache_data
+def load_team_stats(season):
+
+    team_api = TeamStats('E')
+
+    #traditional stats
+    df_team_trad = team_api.get_team_stats_single_season(
+        endpoint='traditional',
+        season=season,
+        statistic_mode='Accumulated'
+    )
+
+    #advanced stats
+    df_team_adv= team_api.get_team_stats_single_season(
+        endpoint= 'advanced',
+        season=season,
+        statistic_mode='Accumulated'
+    )
+
+    return df_team_trad, df_team_adv

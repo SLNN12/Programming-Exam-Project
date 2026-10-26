@@ -1,5 +1,6 @@
 import streamlit as st
 import intro
+import teams
 #import teams
 #import players
 
@@ -46,6 +47,7 @@ elif picked_section == '2. Team Analysis':
         Here you will be able to explore various statistics and metrics for Euroleague franchises. From win-loss records to offensive efficiency and overall team contributions, use the sidebar filters to select a team and uncover what drives their success on the court.
         """
     )
+    teams.display_teams()
 
 elif picked_section == '3. Player Analysis':
     st.title('Player Analysis')
