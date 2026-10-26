@@ -28,7 +28,26 @@ def display_overview():
             'Select a Team:',
             options = team_list
         )
+    #team logos 
+    st.subheader(":orange[──────────────────────────── **Euroleague Teams** ──────────────────────────]")
+    
 
+    #searching the column that contains the logo URLs
+    logo_col = None
+    for col in df_teams.columns:
+        if 'image' in col.lower():
+            logo_col = col
+            break
+
+    if logo_col is not None:
+        #creating horiz row with logos
+        cols = st.columns(len(df_teams))
+
+        for index, row in df_teams.iterrows():
+            with cols[index]:
+                st.image(row[logo_col], use_container_width=True)
+    else:
+        st.write('Logo URLs not found in the dataset.')
 
     #KPI
 
@@ -146,24 +165,3 @@ def display_overview():
     else:
         st.write('No standings trend data available')
 
-
-    #team logos 
-    st.subheader(":orange[──────────────────────────── **Euroleague Teams** ──────────────────────────]")
-    
-
-    #searching the column that contains the logo URLs
-    logo_col = None
-    for col in df_teams.columns:
-        if 'image' in col.lower():
-            logo_col = col
-            break
-
-    if logo_col is not None:
-        #creating horiz row with logos
-        cols = st.columns(len(df_teams))
-
-        for index, row in df_teams.iterrows():
-            with cols[index]:
-                st.image(row[logo_col], use_container_width=True)
-    else:
-        st.write('Logo URLs not found in the dataset.')

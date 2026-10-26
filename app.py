@@ -19,6 +19,7 @@ picked_section = st.sidebar.radio(
         '1. Project Overview',
         '2. Team Analysis',
         '3. Player Analysis',
+        '4. Match Predictor',
     ]
 )
 
@@ -53,5 +54,14 @@ elif picked_section == '3. Player Analysis':
         This section is all about individual talent. 
         
         Here you can explore specific player profiles and their historical statistics. Select a player to view detailed information, analyze their shooting accuracy, review their performance metrics, and see exactly how they impact the game.
+        """
+    )
+
+elif picked_section == '4. Match Predictor':
+    st.title(':orange[Match Predictor]')
+    st.write(
+        """
+        This section is a personal experiment, i have not so much experience in machine learning, i try to inegrate it in a match predictor, hope it will be precise
+        
         """
     )
