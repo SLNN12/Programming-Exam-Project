@@ -120,6 +120,7 @@ def display_teams():
             delta=f"{team_data['Hustle_Rank']}° in the league",  
             delta_color="off"
         )
+    st.write('The hustle index is calculated with this formula: (steals + blocks + offensiveRebounds + foulsDrawn) / gamesPlayed')
     st.write("---")
 
     # radar chart 
