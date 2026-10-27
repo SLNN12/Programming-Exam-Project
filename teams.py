@@ -51,8 +51,6 @@ def display_teams():
 
     st.write('---')
 
-    #isolate team data for the next analysis
-    team_data = df_team_full[df_team_full['team.name']== selected_team].iloc[0]
 
     # merge with standing data to get point against
     df_standings, _ = load_data(selected_season)
@@ -64,6 +62,23 @@ def display_teams():
                    'steals', 'blocks', 'foulsDrawn', 'gamesPlayed']
     for col in cols_to_num:
         df_team_full[col] = pd.to_numeric(df_team_full[col], errors='coerce')
+
+    #cleaning radar metrics for the radar graph, inserted here because those metrics are inserted in str with %. symbol and need them in int before the isolation of team data
+    radar_metrics = [
+        'pointsScored', 
+        'twoPointersPercentage', 
+        'threePointersPercentage', 
+        'assists', 
+        'pir'
+    ]
+
+    #convert the metrics in number
+    for col in radar_metrics:
+        df_team_full[col] = df_team_full[col].astype(str).str.replace('%', '')
+        df_team_full[col] = pd.to_numeric(df_team_full[col], errors='coerce')
+
+    if df_team_full[col].max() <= 1.0:
+        df_team_full[col] = df_team_full[col]*100
 
     # Creating Field goal atttempted columns
     df_team_full['FGA'] = df_team_full['twoPointersAttempted'] + df_team_full['threePointersAttempted']
@@ -99,7 +114,7 @@ def display_teams():
     
     with kpi_col1:
         st.metric(
-            label="O-Rating", 
+            label="Offensive Rating", 
             value=f"{team_data['O_Rating']:.1f}",       
             delta=f"{team_data['O_Rank']}° in the league",  
             delta_color="off"         
@@ -107,7 +122,7 @@ def display_teams():
         
     with kpi_col2:
         st.metric(
-            label="D-Rating", 
+            label="Difensive Rating", 
             value=f"{team_data['D_Rating']:.1f}",       
             delta=f"{team_data['D_Rank']}° in the league",  
             delta_color="off"
@@ -126,57 +141,48 @@ def display_teams():
     # radar chart 
     st.subheader(":orange[Tactical Profile vs League Average]")
 
-    radar_metrics = [
-        'effectiveFieldGoalPercentage', 
-        'trueShootingPercentage', 
-        'offensiveReboundsPercentage', 
-        'defensiveReboundsPercentage', 
-        'assistsRatio'
-    ]
+    #creating a copy of the original df
+    df_radar_norm = df_team_full[radar_metrics].copy()
 
-    #convert the metrics in number
     for col in radar_metrics:
-        df_team_full[col] = df_team_full[col].astype(str).str.replace('%', '')
-        df_team_full[col] = pd.to_numeric(df_team_full[col], errors='coerce')
+        min_val = df_radar_norm[col].min()
+        max_val = df_radar_norm[col].max()
 
-    # calculating league average for the metrics
-    league_avg = df_team_full[radar_metrics].mean()
+        df_radar_norm[col] = ((df_radar_norm[col] - min_val)/ (max_val - min_val)) *100
 
-    # raw team values
-    team_values = team_data[radar_metrics].values
+    #calculate avg value and team normalized
+    league_avg_norm = df_radar_norm.mean()
 
-    # indices the graph
+    #isolate the team index to extract team values normalized
+    team_idx = df_team_full[df_team_full['team.name'] == selected_team].index[0]
+
+    team_values_norm = df_radar_norm.loc[team_idx].values
+
+    #create plotly graph
     fig_radar = go.Figure()
 
-    # league average radar
     fig_radar.add_trace(go.Scatterpolar(
-        # assign to r the league average values
-        r = league_avg,
-        # assign the name with the list of radar metrics
-        theta = radar_metrics,
-        fill = 'toself',
-        name = 'League Average',
-        line_color = 'gray',
+        r = league_avg_norm,
+        theta=radar_metrics,
+        fill='toself',
+        name='league average',
+        line_color ='gray',
         opacity = 0.5
     ))
 
-    #Selected team radar
     fig_radar.add_trace(go.Scatterpolar(
-        # assign team name and metrics name
-        r = team_values,
-        theta = radar_metrics,
-        fill = 'toself',
-        name = selected_team,
-        line_color = 'orange'
+        r=team_values_norm,
+        theta=radar_metrics,
+        fill='toself',
+        name=selected_team,
+        line_color='orange',
     ))
 
-    # laoyout and printing
     fig_radar.update_layout(
-        polar = dict(
-            radialaxis = dict(visible=True, range=[0, 65])
-        ),
-        showlegend = True,
-        height = 500
+        height=500,
+        showlegend=True
     )
+
+    fig_radar.update_polars(radialaxis_range=[0, 80])
 
     st.plotly_chart(fig_radar, use_container_width=True)
