@@ -95,4 +95,19 @@ def load_team_stats(season):
         statistic_mode='Accumulated'
     )
 
-    return df_team_trad, df_team_adv
+    #defensive traditional stats
+    df_team_opp_trad= team_api.get_team_stats_single_season(
+            endpoint= 'opponentsTraditional',
+            season=season,
+            statistic_mode='Accumulated'
+        )
+
+    #defensive advanced stats
+        #defensive traditional stats
+    df_team_opp_adv= team_api.get_team_stats_single_season(
+            endpoint= 'opponentsAdvanced',
+            season=season,
+            statistic_mode='Accumulated'
+        )
+        
+    return df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv

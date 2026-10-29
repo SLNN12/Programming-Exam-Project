@@ -27,12 +27,22 @@ def display_teams():
                 key='team_season_select' #to avoid conflict with the intro selection menu
             )
         #downloading real stats now that we have the seasons
-        df_team_trad, df_team_adv = load_team_stats(selected_season)
+        df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv = load_team_stats(selected_season)
 
-        #merging the 2 dataset
+        #merging the teams stats
         df_team_full = pd.merge(df_team_trad, df_team_adv, on=['team.code', 'team.name', 'team.imageUrl', 'gamesPlayed'])
 
+        #removing duplicates from defensive sets
+        cols_to_drop= ['team.name', 'team.imageUrl', 'team.tvCodes', 'TeamRanking', 'gamesPlayed']
+        df_opp_trad_clean = df_team_opp_trad(columns=[c for c in cols_to_drop if c in df_team_opp_trad.columns])
+        df_opp_adv_clean = df_team_opp_adv(columns=[c for c in cols_to_drop if c in df_team_opp_adv.columns])
+        
+        df_team_full = pd.merge(df_team_trad, df_opp_trad_clean, on='team.code', suffixes=('', '_opp_trad'))
+        df_team_full = pd.merge(df_team_trad, df_opp_adv_clean, on='team.code', suffixes=('', '_opp_adv'))
+        st.write(df_team_full.columns)
+
         team_list = sorted(df_team_full['team.name'].dropna().unique().tolist())
+    
 
         with col_sel2:
             selected_team = st.selectbox(
@@ -40,7 +50,7 @@ def display_teams():
                 options = team_list,
                 key='team_name_select'
             )
-
+    st.write(df_team_full.columns)
     #showing the team logo up right in ther page
     with header_col3:
         logo_url = df_team_full[df_team_full['team.name']== selected_team]['team.imageUrl'].values[0]
@@ -60,25 +70,23 @@ def display_teams():
     cols_to_num = ['twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted', 
                    'offensiveRebounds', 'turnovers', 'pointsScored', 'pointsAgainst', 
                    'steals', 'blocks', 'foulsDrawn', 'gamesPlayed']
+
+    #func to transform numeric metric in % metric
+    def clean_numeric_value(val):
+        if pd.isna(val):
+            return 0.0
+        val_str =str(val).replace('%', '').strip()
+        try:
+            num = float(val_str)
+            #if the number is a decimal between 0 and 1, took it in scale 0-100
+            if 0.0<=num <=1.0:
+                return num*100
+            return num
+        except ValueError:
+            return 0.0
     for col in cols_to_num:
-        df_team_full[col] = pd.to_numeric(df_team_full[col], errors='coerce')
-
-    #cleaning radar metrics for the radar graph, inserted here because those metrics are inserted in str with %. symbol and need them in int before the isolation of team data
-    radar_metrics = [
-        'pointsScored', 
-        'twoPointersPercentage', 
-        'threePointersPercentage', 
-        'assists', 
-        'pir'
-    ]
-
-    #convert the metrics in number
-    for col in radar_metrics:
-        df_team_full[col] = df_team_full[col].astype(str).str.replace('%', '')
-        df_team_full[col] = pd.to_numeric(df_team_full[col], errors='coerce')
-
-    if df_team_full[col].max() <= 1.0:
-        df_team_full[col] = df_team_full[col]*100
+        if col in df_team_full.columns:
+            df_team_full[col] = df_team_full[col].apply(clean_numeric_value)
 
     # Creating Field goal atttempted columns
     df_team_full['FGA'] = df_team_full['twoPointersAttempted'] + df_team_full['threePointersAttempted']
@@ -140,49 +148,3 @@ def display_teams():
 
     # radar chart 
     st.subheader(":orange[Tactical Profile vs League Average]")
-
-    #creating a copy of the original df
-    df_radar_norm = df_team_full[radar_metrics].copy()
-
-    for col in radar_metrics:
-        min_val = df_radar_norm[col].min()
-        max_val = df_radar_norm[col].max()
-
-        df_radar_norm[col] = ((df_radar_norm[col] - min_val)/ (max_val - min_val)) *100
-
-    #calculate avg value and team normalized
-    league_avg_norm = df_radar_norm.mean()
-
-    #isolate the team index to extract team values normalized
-    team_idx = df_team_full[df_team_full['team.name'] == selected_team].index[0]
-
-    team_values_norm = df_radar_norm.loc[team_idx].values
-
-    #create plotly graph
-    fig_radar = go.Figure()
-
-    fig_radar.add_trace(go.Scatterpolar(
-        r = league_avg_norm,
-        theta=radar_metrics,
-        fill='toself',
-        name='league average',
-        line_color ='gray',
-        opacity = 0.5
-    ))
-
-    fig_radar.add_trace(go.Scatterpolar(
-        r=team_values_norm,
-        theta=radar_metrics,
-        fill='toself',
-        name=selected_team,
-        line_color='orange',
-    ))
-
-    fig_radar.update_layout(
-        height=500,
-        showlegend=True
-    )
-
-    fig_radar.update_polars(radialaxis_range=[0, 80])
-
-    st.plotly_chart(fig_radar, use_container_width=True)
