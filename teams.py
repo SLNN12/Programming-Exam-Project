@@ -29,17 +29,20 @@ def display_teams():
         #downloading real stats now that we have the seasons
         df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv = load_team_stats(selected_season)
 
-        #merging the teams stats
-        df_team_full = pd.merge(df_team_trad, df_team_adv, on=['team.code', 'team.name', 'team.imageUrl', 'gamesPlayed'])
+        #removing duplicates from the sets
+        cols_to_drop= ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
 
-        #removing duplicates from defensive sets
-        cols_to_drop= ['team.name', 'team.imageUrl', 'team.tvCodes', 'TeamRanking', 'gamesPlayed']
-        df_opp_trad_clean = df_team_opp_trad(columns=[c for c in cols_to_drop if c in df_team_opp_trad.columns])
-        df_opp_adv_clean = df_team_opp_adv(columns=[c for c in cols_to_drop if c in df_team_opp_adv.columns])
+        df_adv_clean = df_team_adv.drop(columns=[c for c in cols_to_drop if c in df_team_adv.columns])
+        #merging the teams stats
+        df_team_full = pd.merge(df_team_trad, df_team_adv, on='team.code')
+
+        
+    
+        df_opp_trad_clean = df_team_opp_trad.drop(columns=[c for c in cols_to_drop if c in df_team_opp_trad.columns])
+        df_opp_adv_clean = df_team_opp_adv.drop(columns=[c for c in cols_to_drop if c in df_team_opp_adv.columns])
         
         df_team_full = pd.merge(df_team_trad, df_opp_trad_clean, on='team.code', suffixes=('', '_opp_trad'))
         df_team_full = pd.merge(df_team_trad, df_opp_adv_clean, on='team.code', suffixes=('', '_opp_adv'))
-        st.write(df_team_full.columns)
 
         team_list = sorted(df_team_full['team.name'].dropna().unique().tolist())
     
