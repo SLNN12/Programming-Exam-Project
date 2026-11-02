@@ -111,3 +111,12 @@ def load_team_stats(season):
         )
         
     return df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv
+
+@st.cache_data
+def load_round_standings(season, round_num):
+    """
+    Downloading Standings for the selected season and round.
+    """
+    standings_api = Standings("E")
+    df_round = standings_api.get_standings(season=season, round_number=round_num)
+    return df_round
