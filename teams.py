@@ -71,18 +71,18 @@ def display_teams():
     df_team_full = pd.merge(df_team_full, df_standings[['team.code', 'pointsAgainst']], on='team.code')
 
     cols_to_num = [
-        # Metriche base esistenti
+        # Base metrics
         'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted', 
         'offensiveRebounds', 'turnovers', 'pointsScored', 'pointsAgainst', 
         'steals', 'blocks', 'foulsDrawn', 'gamesPlayed',
         
-        # Metriche per il Radar Offensivo
+        # Metric for the Offensive Radar
         'effectiveFieldGoalPercentage', 
         'assistsRatio', 
         'offensiveReboundsPercentage', 
         'turnoversRatio',
         
-        # Metriche per il Radar Difensivo
+        # Metric for the Defensive Radar
         'effectiveFieldGoalPercentage_opp_adv', 
         'defensiveReboundsPercentage', 
         'turnoversRatio_opp_adv', 
