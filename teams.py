@@ -53,7 +53,7 @@ def display_teams():
                 options = team_list,
                 key='team_name_select'
             )
-    st.write(df_team_full.columns)
+    #st.write(df_team_full.columns) -- used to check the imported columns from the API, to check if they are present or not
     #showing the team logo up right in ther page
     with header_col3:
         logo_url = df_team_full[df_team_full['team.name']== selected_team]['team.imageUrl'].values[0]
