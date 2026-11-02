@@ -115,7 +115,7 @@ def display_teams():
 
     # creating offensive and defensive rating columns
     df_team_full['O_Rating'] = df_team_full.eval('(pointsScored / Possessions) * 100')
-    df_team_full['D_Rating'] = df_team_full.eval('(pointsAgainst / Possessions) * 100')
+    df_team_full['D_Rating'] = df_team_full.eval('(pointsScored_opp_trad / Possessions) * 100')
     
 
     # Create a personal metric called hustle index, the teams who plays with the most intesity have an higher index
@@ -171,7 +171,7 @@ def display_teams():
     df_radar = df_team_full.copy()
 
     #Func to normalize the metrics to a scale of 0-100 with inversion logic 
-    def normalize_metric(df, columns, invert=False):
+    def normalize_metric(df, columns, invert=False, floor=15):
         min_val = df[columns].min()
         max_val = df[columns].max()
 
@@ -179,6 +179,7 @@ def display_teams():
 
         if invert:
             norm = 100 - norm
+        norm = floor +(norm*(100-floor)/100) #flooring the values to avoid 0 in the radar chart
         return norm
 
     #use the function to normalize the metrics for the radar chart with new columns
@@ -210,6 +211,29 @@ def display_teams():
     team_values_off = df_radar.loc[team_idx, off_norm_cols].values
     team_values_def = df_radar.loc[team_idx, def_norm_cols].values
 
+    #extract the real values for the selected team to show in the hover tooltip
+    raw_off_cols = ['O_Rating', 'effectiveFieldGoalPercentage', 'assistsRatio', 'offensiveReboundsPercentage', 'turnoversRatio']
+    raw_off_vals = df_team_full.loc[team_idx, raw_off_cols].values
+
+    off_hover_text = [
+        f"Real Value: {round(raw_off_vals[0], 1)} pts/100 poss",
+        f"Real Value: {round(raw_off_vals[1], 1)} %",
+        f"Real Value: {round(raw_off_vals[2], 1)} %",
+        f"Real Value: {round(raw_off_vals[3], 1)} %",
+        f"Real Value: {round(raw_off_vals[4], 1)} %"    
+    ]
+
+    raw_def_cols = ['D_Rating', 'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage', 'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad']
+    raw_def_vals = df_team_full.loc[team_idx, raw_def_cols].values
+
+    def_hover_text = [
+        f"Real Value: {round(raw_def_vals[0], 1)} pts/100 poss",
+        f"Real Value: {round(raw_def_vals[1], 1)} %",
+        f"Real Value: {round(raw_def_vals[2], 1)} %",
+        f"Real Value: {round(raw_def_vals[3], 1)} %",
+        f"Real Value: {round(raw_def_vals[4], 1)} %"    
+    ]
+
     #build the graphic
     col_radar1, col_radar2 = st.columns(2)
 
@@ -218,7 +242,7 @@ def display_teams():
         fig_off.add_trace(go.Scatterpolar(r=league_avg_off, theta=off_labels, fill='toself', name='League Average', line_color='gray', opacity=0.5))
 
         # Add the selected team trace
-        fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='orange'))
+        fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='orange', text= off_hover_text, hoverinfo='text'))
 
         fig_off.update_layout(title='Offensive Radar', height=400, showlegend=False)
         fig_off.update_polars(radialaxis_range=[0, 100])
@@ -229,7 +253,7 @@ def display_teams():
         fig_def.add_trace(go.Scatterpolar(r=league_avg_def, theta=def_labels, fill='toself', name='League Average', line_color='gray', opacity=0.5))
 
         # Add the selected team trace
-        fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='orange'))
+        fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='orange', text= def_hover_text, hoverinfo='text'))
 
         fig_def.update_layout(title='Defensive Radar', height=400, showlegend=False)
         fig_def.update_polars(radialaxis_range=[0, 100])
