@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px 
 import plotly.graph_objects as go
-from data_loader import load_data, load_team_stats
+from data_loader import load_data, load_team_stats, load_round_standings
 
 def display_teams():
     st.write( '---')
@@ -54,13 +54,39 @@ def display_teams():
                 key='team_name_select'
             )
     #st.write(df_team_full.columns) -- used to check the imported columns from the API, to check if they are present or not
-    #showing the team logo up right in ther page
+    #showing the team logo up right in the page with the win/loss record
     with header_col3:
-        logo_url = df_team_full[df_team_full['team.name']== selected_team]['team.imageUrl'].values[0]
+        #obtain team info for the selected team
+        team_info = df_team_full[df_team_full['team.name'] == selected_team].iloc[0]
+        logo_url = team_info['team.imageUrl']
+        team_code = team_info['team.code']
 
-        #inserting space to aligne it
-        st.write('')
-        st.image(logo_url, width=120)
+        #get the latest round played by the team fixing the maximum number to the number of games in the regular season
+        total_teams = len(df_team_full)
+        max_games = (total_teams - 1) * 2
+        latest_round = min(max(int(team_info['gamesPlayed']), 1), max_games)
+
+        #load the standings for the latest round
+        df_latest_standings = load_round_standings(selected_season, latest_round)
+        df_latest_standings = df_latest_standings.rename(columns={'club.code': 'team.code'})
+
+        #iso the team row for the selected team
+        team_record = df_latest_standings[df_latest_standings['team.code'] == team_code].iloc[0]
+
+        wins = team_record['gamesWon']
+        losses = team_record['gamesLost']
+
+        #layout for logo and record
+        logo_col, record_col = st.columns([1.2, 1])
+
+        with logo_col:
+            st.write('')
+            st.image(logo_url, width=110)
+
+        with record_col:
+            st.write('')
+            st.write("")
+            st.subheader(f":orange[{wins}W - {losses}L]")
 
     st.write('---')
 
