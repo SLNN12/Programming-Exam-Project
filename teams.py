@@ -260,12 +260,26 @@ def display_teams():
         f"Real Value: {round(raw_def_vals[4], 1)} %"    
     ]
 
+    #create list for the select box to choose what to compare the selected team with
+    comp_options = ['League Average'] + sorted(list(df_radar['team.name'].unique()))
+    select_comp = st.selectbox('Compare against:', comp_options)
+
+    if select_comp == 'League Average':
+        comp_val_off = df_radar[off_norm_cols].mean().values
+        comp_val_def = df_radar[def_norm_cols].mean().values
+        comp_name = 'League Average'
+    else:
+        comp_idx = df_radar[df_radar['team.name'] == select_comp].index[0]
+        comp_val_off = df_radar.loc[comp_idx, off_norm_cols].values
+        comp_val_def = df_radar.loc[comp_idx, def_norm_cols].values
+        comp_name = select_comp
+
     #build the graphic
     col_radar1, col_radar2 = st.columns(2)
 
     with col_radar1:
         fig_off = go.Figure()
-        fig_off.add_trace(go.Scatterpolar(r=league_avg_off, theta=off_labels, fill='toself', name='League Average', line_color='gray', opacity=0.5))
+        fig_off.add_trace(go.Scatterpolar(r=comp_val_off, theta=off_labels, fill='toself', name=comp_name, line_color='gray', opacity=0.5))
 
         # Add the selected team trace
         fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='orange', text= off_hover_text, hoverinfo='text'))
@@ -276,7 +290,7 @@ def display_teams():
 
     with col_radar2:
         fig_def = go.Figure()
-        fig_def.add_trace(go.Scatterpolar(r=league_avg_def, theta=def_labels, fill='toself', name='League Average', line_color='gray', opacity=0.5))
+        fig_def.add_trace(go.Scatterpolar(r=comp_val_def, theta=def_labels, fill='toself', name=comp_name, line_color='gray', opacity=0.5))
 
         # Add the selected team trace
         fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='orange', text= def_hover_text, hoverinfo='text'))
