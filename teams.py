@@ -153,8 +153,6 @@ def display_teams():
     df_team_full['Hustle_Rank'] = df_team_full['Hustle_Index'].rank(ascending=False).astype(int)
 
    # KPI CARDS
-    st.write("---")
-    
     # isolate selected team row
     team_data = df_team_full[df_team_full['team.name'] == selected_team].iloc[0]
 
@@ -306,7 +304,18 @@ def display_teams():
         # Add the selected team trace
         fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='darkorange', text= off_hover_text, hoverinfo='text'))
 
-        fig_off.update_layout(title='Offensive Radar', height=400, showlegend=False)
+        fig_off.update_layout(
+            title='Offensive Radar', 
+            height=430, 
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor='top',
+                y=-0.25,
+                xanchor="center",
+                x=0.5
+            )
+        )
         fig_off.update_polars(radialaxis_range=[0, 100])
         st.plotly_chart(fig_off, use_container_width=True)
 
@@ -317,6 +326,17 @@ def display_teams():
         # Add the selected team trace
         fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='darkorange', text= def_hover_text, hoverinfo='text'))
 
-        fig_def.update_layout(title='Defensive Radar', height=400, showlegend=False)
+        fig_def.update_layout(
+            title='Defensive Radar',
+            height=430,
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor='top',
+                y=-0.25,
+                xanchor="center",
+                x=0.5
+            )
+        )
         fig_def.update_polars(radialaxis_range=[0, 100])
         st.plotly_chart(fig_def, use_container_width=True)
