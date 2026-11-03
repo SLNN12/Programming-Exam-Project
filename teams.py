@@ -7,12 +7,6 @@ from data_loader import load_data, load_team_stats, load_round_standings
 def display_teams():
     st.write( '---')
 
-    #download the data
-    with st.spinner('Downloading Euroleague Data...'):
-
-        #base data 
-        df_team_list, _ = load_data(2026)
-
     #3 cols layout for the header
     header_col1, header_col2, header_col3 = st.columns([2,1,2])
 
@@ -27,6 +21,8 @@ def display_teams():
                 key='team_season_select' #to avoid conflict with the intro selection menu
             )
         #downloading real stats now that we have the seasons
+            #download the data
+    with st.spinner('Downloading Euroleague Data...'):
         df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv = load_team_stats(selected_season)
 
         #removing duplicates from the sets
@@ -91,29 +87,24 @@ def display_teams():
     st.write('---')
 
 
-    # merge with standing data to get point against
-    df_standings, _ = load_data(selected_season)
-    df_standings = df_standings.rename(columns={'club.code': 'team.code'})
-    df_team_full = pd.merge(df_team_full, df_standings[['team.code', 'pointsAgainst']], on='team.code')
-
     cols_to_num = [
-        # Base metrics
-        'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted', 
-        'offensiveRebounds', 'turnovers', 'pointsScored', 'pointsAgainst', 
-        'steals', 'blocks', 'foulsDrawn', 'gamesPlayed',
-        
-        # Metric for the Offensive Radar
-        'effectiveFieldGoalPercentage', 
-        'assistsRatio', 
-        'offensiveReboundsPercentage', 
-        'turnoversRatio',
-        
-        # Metric for the Defensive Radar
-        'effectiveFieldGoalPercentage_opp_adv', 
-        'defensiveReboundsPercentage', 
-        'turnoversRatio_opp_adv', 
-        'twoPointersPercentage_opp_trad'
-    ]
+            # Base metrics
+            'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted', 
+            'offensiveRebounds', 'defensiveRebounds', 'turnovers', 'turnovers_opp_trad',
+            'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed',
+            
+            # Metric for the Offensive Radar
+            'effectiveFieldGoalPercentage', 
+            'assistsRatio', 
+            'offensiveReboundsPercentage', 
+            'turnoversRatio',
+            
+            # Metric for the Defensive Radar
+            'effectiveFieldGoalPercentage_opp_adv', 
+            'defensiveReboundsPercentage', 
+            'turnoversRatio_opp_adv', 
+            'twoPointersPercentage_opp_trad'
+        ]
 
     #func to transform numeric metric in % metric
     def clean_numeric_value(val):
@@ -137,7 +128,13 @@ def display_teams():
 
     # Creating Possessions columns, the formula is the official one by FIBA
     df_team_full['Possessions'] = df_team_full.eval('FGA + (0.44* freeThrowsAttempted) - offensiveRebounds + turnovers')
-    
+
+    #calcuating stats per game
+    df_team_full['AST_per_game'] = df_team_full.eval('assists / gamesPlayed')
+    df_team_full['ORB_per_game'] = df_team_full.eval('offensiveRebounds / gamesPlayed')
+    df_team_full['DRB_per_game'] = df_team_full.eval('defensiveRebounds / gamesPlayed')
+    df_team_full['TOV_per_game'] = df_team_full.eval('turnovers / gamesPlayed')
+    df_team_full['opp_TOV_per_game'] = df_team_full.eval('turnovers_opp_trad / gamesPlayed')
 
     # creating offensive and defensive rating columns
     df_team_full['O_Rating'] = df_team_full.eval('(pointsScored / Possessions) * 100')
@@ -227,37 +224,34 @@ def display_teams():
     off_norm_cols = ['O_Rating_norm', 'eFG%_norm', 'AST%_norm', 'ORB%_norm', 'TOV%_norm']
     def_norm_cols = ['D_Rating_norm', 'opp_eFG%_norm', 'DRB%_norm', 'opp_TOV%_norm', 'opp_2P%_norm']
 
-    off_labels = ['Offensive Rating', 'eFG%', 'Assists %', 'Off Rebound %', 'Turnover %(Inverted)']
-    def_labels = ['Defensive Rating (Inverted)', 'Opp eFG% (Inverted)', 'Def Rebound %', 'Opp Turnover %', 'Opp 2P%(Inverted)']
-
-    league_avg_off = df_radar[off_norm_cols].mean().values
-    league_avg_def = df_radar[def_norm_cols].mean().values
+    off_labels = ['Offensive Rating', 'eFG%', 'Assists %', 'Off Rebound %', 'Ball Security']
+    def_labels = ['Defensive Rating (Inverted)', 'Opp eFG% (Inverted)', 'Def Rebound %', 'Turnover Forced', 'Opp 2P%(Inverted)']
 
     team_idx = df_radar[df_radar['team.name'] == selected_team].index[0]
     team_values_off = df_radar.loc[team_idx, off_norm_cols].values
     team_values_def = df_radar.loc[team_idx, def_norm_cols].values
 
     #extract the real values for the selected team to show in the hover tooltip
-    raw_off_cols = ['O_Rating', 'effectiveFieldGoalPercentage', 'assistsRatio', 'offensiveReboundsPercentage', 'turnoversRatio']
+    raw_off_cols = ['O_Rating', 'effectiveFieldGoalPercentage', 'assistsRatio', 'AST_per_game', 'offensiveReboundsPercentage', 'ORB_per_game', 'turnoversRatio', 'TOV_per_game']
     raw_off_vals = df_team_full.loc[team_idx, raw_off_cols].values
 
     off_hover_text = [
-        f"Real Value: {round(raw_off_vals[0], 1)} pts/100 poss",
-        f"Real Value: {round(raw_off_vals[1], 1)} %",
-        f"Real Value: {round(raw_off_vals[2], 1)} %",
-        f"Real Value: {round(raw_off_vals[3], 1)} %",
-        f"Real Value: {round(raw_off_vals[4], 1)} %"    
+        f"Offensive rating: {round(raw_off_vals[0], 1)} pts/100 poss",
+        f"eFG%: {round(raw_off_vals[1], 1)} %",
+        f"Assists: {round(raw_off_vals[2], 1)}% ({round(raw_off_vals[3], 1)} per game)",
+        f"Off Rebound %: {round(raw_off_vals[4], 1)}% ({round(raw_off_vals[5], 1)} per game)",
+        f"Turnover %(Inverted): {round(raw_off_vals[6], 1)}% ( {round(raw_off_vals[7], 1)} per game)"    
     ]
 
-    raw_def_cols = ['D_Rating', 'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage', 'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad']
+    raw_def_cols = ['D_Rating', 'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage', 'DRB_per_game', 'turnoversRatio_opp_adv', 'opp_TOV_per_game', 'twoPointersPercentage_opp_trad']
     raw_def_vals = df_team_full.loc[team_idx, raw_def_cols].values
 
     def_hover_text = [
-        f"Real Value: {round(raw_def_vals[0], 1)} pts/100 poss",
-        f"Real Value: {round(raw_def_vals[1], 1)} %",
-        f"Real Value: {round(raw_def_vals[2], 1)} %",
-        f"Real Value: {round(raw_def_vals[3], 1)} %",
-        f"Real Value: {round(raw_def_vals[4], 1)} %"    
+        f"Defensive rating: {round(raw_def_vals[0], 1)} pts/100 poss",
+        f"Opp eFG% (Inverted): {round(raw_def_vals[1], 1)} %",
+        f"Def Rebound %: {round(raw_def_vals[2], 1)}% ({round(raw_def_vals[3], 1)} per game)",
+        f"Opp Turnover %: {round(raw_def_vals[4], 1)}% ({round(raw_def_vals[5], 1)} per game)",
+        f"Opp 2P%(Inverted): {round(raw_def_vals[6], 1)} %"    
     ]
 
     #create list for the select box to choose what to compare the selected team with
@@ -265,24 +259,52 @@ def display_teams():
     select_comp = st.selectbox('Compare against:', comp_options)
 
     if select_comp == 'League Average':
+        #normalized values for the league average
         comp_val_off = df_radar[off_norm_cols].mean().values
         comp_val_def = df_radar[def_norm_cols].mean().values
+
+        #raw values for the league average
+        comp_raw_off = df_team_full[raw_off_cols].mean().values
+        comp_raw_def = df_team_full[raw_def_cols].mean().values
         comp_name = 'League Average'
     else:
         comp_idx = df_radar[df_radar['team.name'] == select_comp].index[0]
+        #normalized values for the selected comparison team
         comp_val_off = df_radar.loc[comp_idx, off_norm_cols].values
         comp_val_def = df_radar.loc[comp_idx, def_norm_cols].values
+        #raw values for the selected comparison team
+        comp_raw_off = df_team_full.loc[comp_idx, raw_off_cols].values
+        comp_raw_def = df_team_full.loc[comp_idx, raw_def_cols].values
+
         comp_name = select_comp
+
+
+    #comparison hover text for the radar chart
+    comp_off_hover_text = [
+        f"Offensive rating: {round(comp_raw_off[0], 1)} pts/100 poss",
+        f"eFG%: {round(comp_raw_off[1], 1)} %",
+        f"Assists: {round(comp_raw_off[2], 1)}% ({round(comp_raw_off[3], 1)} per game)",
+        f"Off Rebound %: {round(comp_raw_off[4], 1)}% ({round(comp_raw_off[5], 1)} per game)",
+        f"Turnover %(Inverted): {round(comp_raw_off[6], 1)}% ({round(comp_raw_off[7], 1)} per game)"    
+    ]
+
+    comp_def_hover_text = [
+        f"Defensive rating: {round(comp_raw_def[0], 1)} pts/100 poss",
+        f"Opp eFG% (Inverted): {round(comp_raw_def[1], 1)} %",
+        f"Def Rebound %: {round(comp_raw_def[2], 1)}% ({round(comp_raw_def[3], 1)} per game)",
+        f"Opp Turnover %: {round(comp_raw_def[4], 1)}% ({round(comp_raw_def[5], 1)} per game)",
+        f"Opp 2P%(Inverted): {round(comp_raw_def[6], 1)} %"    
+    ]
 
     #build the graphic
     col_radar1, col_radar2 = st.columns(2)
 
     with col_radar1:
         fig_off = go.Figure()
-        fig_off.add_trace(go.Scatterpolar(r=comp_val_off, theta=off_labels, fill='toself', name=comp_name, line_color='gray', opacity=0.5))
+        fig_off.add_trace(go.Scatterpolar(r=comp_val_off, theta=off_labels, fill='toself', name=comp_name, line_color='darkgray', opacity=0.5, text=comp_off_hover_text, hoverinfo='text'))
 
         # Add the selected team trace
-        fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='orange', text= off_hover_text, hoverinfo='text'))
+        fig_off.add_trace(go.Scatterpolar(r=team_values_off, theta=off_labels, fill='toself', name=selected_team, line_color='darkorange', text= off_hover_text, hoverinfo='text'))
 
         fig_off.update_layout(title='Offensive Radar', height=400, showlegend=False)
         fig_off.update_polars(radialaxis_range=[0, 100])
@@ -290,10 +312,10 @@ def display_teams():
 
     with col_radar2:
         fig_def = go.Figure()
-        fig_def.add_trace(go.Scatterpolar(r=comp_val_def, theta=def_labels, fill='toself', name=comp_name, line_color='gray', opacity=0.5))
+        fig_def.add_trace(go.Scatterpolar(r=comp_val_def, theta=def_labels, fill='toself', name=comp_name, line_color='gray', opacity=0.5, text=comp_def_hover_text, hoverinfo='text'))
 
         # Add the selected team trace
-        fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='orange', text= def_hover_text, hoverinfo='text'))
+        fig_def.add_trace(go.Scatterpolar(r=team_values_def, theta=def_labels, fill='toself', name=selected_team, line_color='darkorange', text= def_hover_text, hoverinfo='text'))
 
         fig_def.update_layout(title='Defensive Radar', height=400, showlegend=False)
         fig_def.update_polars(radialaxis_range=[0, 100])
