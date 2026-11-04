@@ -48,21 +48,31 @@ def display_players():
 
         #selectbox for player selection with memory on the player selected
         #use session state as the only method for streamlit
-        if 'saved_player' not in st.session_state:
-            st.session_state['saved_player'] = player_list[0]
-
-        if st.session_state['saved_player'] in player_list:
-            position = player_list.index(st.session_state['saved_player'])
+        if 'saved_player' in st.session_state:
+            saved_name = st.session_state['saved_player']
         else:
-            position = 0
+            saved_name = ''
+
+        #default selecting first player on the list
+        selected_default = player_list[0] if player_list else ''
+
+        #if a player was saved search corrispondence
+        if saved_name:
+            search_word = saved_name.replace(',', '').split()[0].lower()
+            for p in player_list:
+                if search_word in p.lower():
+                    selected_default = p
+                    break
+        st.session_state['saved_player'] = selected_default
+
+
 
         select_player = st.selectbox(
             'Select Player',
             options=player_list,
-            index = position
+            key='saved_player'
         )
 
-        st.session_state['saved_player'] = select_player
         
 
     #isolate player data
@@ -147,28 +157,28 @@ def display_players():
         else:
             pts_help= None
         st.metric(label='Points',
-                value = f'{round(player_data["pointsScored"], 1)}',
+                value = player_data['pointsScored'],
                 help = pts_help
                 )
 
     with row1_col2:
-        st.metric(label='Rebounds', value = f'{round(player_data["totalRebounds"], 1)}')
+        st.metric(label='Rebounds', value = player_data['totalRebounds'])
 
     with row1_col3:
-        st.metric(label='Assists', value = f'{round(player_data["assists"], 1)}')
+        st.metric(label='Assists', value = player_data['assists'])
 
     with row2_col1:
-        st.metric(label='Turnovers', value = f'{round(player_data["turnovers"], 1)}')
+        st.metric(label='Turnovers', value = player_data['turnovers'])
 
     with row2_col2:
         st.metric(label='Effective Field Goal%', 
-                value=f'{player_data["effectiveFieldGoalPercentage"]}',
+                value=player_data['effectiveFieldGoalPercentage'],
                 help="Effective Field Goal Percentage: measures shooting efficiency adjusting for the fact that 3-pointers are worth 50% more than 2-pointers. Formula: (FGM + 0.5 * 3PM) / FGA"
                 )
 
     with row2_col3:
         st.metric(label='Performance Index Rating', 
-                value=f'{round(player_data["pir"], 1)}', 
+                value=player_data['pir'], 
                 help="Performance Index Rating: (PTS + REB + AST + STL + BLK + Fouls Drawn) - (Missed Shots + TO + BLK Suffered + Fouls Committed)"
                 )
 
