@@ -1,8 +1,7 @@
 import streamlit as st
 import intro
 import teams
-#import teams
-#import players
+import players
 
 #Page configuration
 st.set_page_config(
@@ -50,7 +49,7 @@ elif picked_section == '2. Team Analysis':
     teams.display_teams()
 
 elif picked_section == '3. Player Analysis':
-    st.title('Player Analysis')
+    st.title(':orange[Player Analysis]')
     st.write(
         """
         This section is all about individual talent. 
@@ -58,6 +57,7 @@ elif picked_section == '3. Player Analysis':
         Here you can explore specific player profiles and their historical statistics. Select a player to view detailed information, analyze their shooting accuracy, review their performance metrics, and see exactly how they impact the game.
         """
     )
+    players.display_players()
 
 elif picked_section == '4. Match Predictor':
     st.title(':orange[Match Predictor]')

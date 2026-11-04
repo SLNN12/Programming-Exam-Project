@@ -128,9 +128,9 @@ def load_player_stats(season, statistic_mode):
     Downloading Player stats for the selected season.
     """
     player_api = PlayerStats("E")
-    df_trad = player_api.get_player_stats_single_season('traditional', season, statistic_mode)
-    df_adv = player_api.get_player_stats_single_season('advanced', season, statistic_mode)
-    df_scoring = player_api.get_player_stats_single_season('scoring', season, statistic_mode)
+    df_trad = player_api.get_player_stats_single_season('traditional', season=season, statistic_mode=statistic_mode)
+    df_adv = player_api.get_player_stats_single_season('advanced', season=season, statistic_mode=statistic_mode)
+    df_scoring = player_api.get_player_stats_single_season('scoring', season=season, statistic_mode=statistic_mode)
 
     #variable with the duplicated columns to drop from the advanced and scoring dataframes
     cols_to_drop = ['playerRanking', 'gamesPlayed', 'gamesStarted', 'minutesPlayed', 
@@ -142,7 +142,7 @@ def load_player_stats(season, statistic_mode):
     df_scoring_cleaned = df_scoring.drop(columns=[c for c in cols_to_drop if c in df_scoring.columns])
 
     #merging the dataframes
-    df_full = pd.merge(df_trad, df_adv_cleaned, on='player.id', how='left')
+    df_full = pd.merge(df_trad, df_adv_cleaned, on='player.code')
     df_full = pd.merge(df_full, df_scoring_cleaned, on='player.code')
 
     return df_full
