@@ -130,7 +130,7 @@ def load_player_stats(season, statistic_mode):
     player_api = PlayerStats("E")
     df_trad = player_api.get_player_stats_single_season('traditional', season=season, statistic_mode=statistic_mode)
     df_adv = player_api.get_player_stats_single_season('advanced', season=season, statistic_mode=statistic_mode)
-    df_scoring = player_api.get_player_stats_single_season('scoring', season=season, statistic_mode=statistic_mode)
+    df_scoring = player_api.get_player_stats_single_season('scoring', season=season, statistic_mode='Accumulated')
 
     #variable with the duplicated columns to drop from the advanced and scoring dataframes
     cols_to_drop = ['playerRanking', 'gamesPlayed', 'gamesStarted', 'minutesPlayed', 

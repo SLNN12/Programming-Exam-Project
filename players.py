@@ -48,11 +48,9 @@ def display_players():
 
         #selectbox for player selection with memory on the player selected
         #use session state as the only method for streamlit
-        #first check
         if 'saved_player' not in st.session_state:
             st.session_state['saved_player'] = player_list[0]
 
-        #
         if st.session_state['saved_player'] in player_list:
             position = player_list.index(st.session_state['saved_player'])
         else:
@@ -82,14 +80,57 @@ def display_players():
         st.write('')
         #player age
         player_age = player_data['player.age']
-        team_logo = player_data['player.team.imageUrl']
+        #team name
+        actual_team_name = player_data['player.team.name']
 
-        #debug to extract team name correctly
-        actual_team = player_data['player.team.name']
         st.header(f'{select_player}')
-        st.write(f'#### **Age:** {player_age} years old')
-        st.write(f'#### **Team:** {actual_team}')
-        st.image(team_logo, width=130)
+        st.write(f'#### **Age** {player_age} years old')
+        st.write(f'#### **Team** {actual_team_name}')
+
+        #plotly donut graph
+        #turn the raw str in to float value
+        raw_2p = player_data[ 'pointsFromTwoPointersPercentage']
+        raw_3p = player_data['pointsFromThreePointersPercentage']
+        raw_ft = player_data['pointsFromFreeThrowsPercentage']
+
+        val_2p = float(str(raw_2p).replace('%', '') if pd.notna(raw_2p) else 0.0)
+        val_3p = float(str(raw_3p).replace('%', '') if pd.notna(raw_2p) else 0.0)
+        val_ft = float(str(raw_ft).replace('%', '') if pd.notna(raw_2p) else 0.0)
+
+        col_logo, col_donut = st.columns(2)
+
+        with col_logo:
+            team_logo = player_data['player.team.imageUrl']
+            st.image(team_logo, width = 150)
+
+        with col_donut:
+            labelz = ['2-Pointers', '3-Pointers', 'Free Throws']
+            vals = [val_2p, val_3p, val_ft]
+
+            #ai generated euroleague color palette
+            euroleague_palette = ['#FF5500', '#0C2340', '#8A99A8']
+
+            fig_scoring = px.pie(
+                names= labelz,
+                values = vals,
+                hole = 0.6,
+                color_discrete_sequence= euroleague_palette,
+
+            )
+
+            fig_scoring.update_traces(textposition='inside', textinfo='percent+label')
+
+            #.update_traces(textinfo='none')
+
+            fig_scoring.update_layout(
+                showlegend=False,
+                height=150,
+                #put the margin = 0 to optimize the space
+                margin =dict(t=0, b=0, l=0, r=0)
+            )
+
+            st.plotly_chart(fig_scoring, use_container_width= True)
+
 
     st.write('---')
 
