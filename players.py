@@ -142,7 +142,14 @@ def display_players():
     row2_col1, row2_col2, row2_col3 = st.columns(3)
 
     with row1_col1:
-        st.metric(label='Points', value = f'{round(player_data["pointsScored"], 1)}')
+        if select_mode == 'PerMinute':
+            pts_help = 'Projected points per 40 minutes of play (full FIBA game). Allows a fair comparison between starters and bench players regardless of actual playing time.'
+        else:
+            pts_help= None
+        st.metric(label='Points',
+                value = f'{round(player_data["pointsScored"], 1)}',
+                help = pts_help
+                )
 
     with row1_col2:
         st.metric(label='Rebounds', value = f'{round(player_data["totalRebounds"], 1)}')
@@ -154,9 +161,15 @@ def display_players():
         st.metric(label='Turnovers', value = f'{round(player_data["turnovers"], 1)}')
 
     with row2_col2:
-        st.metric(label='Effective Field Goal%', value=f'{player_data["effectiveFieldGoalPercentage"]}')
+        st.metric(label='Effective Field Goal%', 
+                value=f'{player_data["effectiveFieldGoalPercentage"]}',
+                help="Effective Field Goal Percentage: measures shooting efficiency adjusting for the fact that 3-pointers are worth 50% more than 2-pointers. Formula: (FGM + 0.5 * 3PM) / FGA"
+                )
 
     with row2_col3:
-        st.metric(label='Performance Index Rating', value=f'{round(player_data["pir"], 1)}')
+        st.metric(label='Performance Index Rating', 
+                value=f'{round(player_data["pir"], 1)}', 
+                help="Performance Index Rating: (PTS + REB + AST + STL + BLK + Fouls Drawn) - (Missed Shots + TO + BLK Suffered + Fouls Committed)"
+                )
 
     st.write('---')
