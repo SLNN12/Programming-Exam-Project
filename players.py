@@ -154,6 +154,8 @@ def display_players():
     with row1_col1:
         if select_mode == 'PerMinute':
             pts_help = 'Projected points per 40 minutes of play (full FIBA game). Allows a fair comparison between starters and bench players regardless of actual playing time.'
+        elif select_mode == 'Per100Possesions':
+            pts_help = 'It shows how many points a player scores, on average, for every 100 possessions they use. Points per 100 possessions = (player’s points / possessions played) × 100.'
         else:
             pts_help= None
         st.metric(label='Points',
