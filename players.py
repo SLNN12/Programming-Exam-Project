@@ -150,27 +150,63 @@ def display_players():
 
     row1_col1, row1_col2, row1_col3 = st.columns(3)
     row2_col1, row2_col2, row2_col3 = st.columns(3)
+    #row1_col3, row2_col2, row3_col3 = st.columns(3)
 
     with row1_col1:
         if select_mode == 'PerMinute':
             pts_help = 'Projected points per 40 minutes of play (full FIBA game). Allows a fair comparison between starters and bench players regardless of actual playing time.'
         elif select_mode == 'Per100Possesions':
             pts_help = 'It shows how many points a player scores, on average, for every 100 possessions they use. Points per 100 possessions = (player’s points / possessions played) × 100.'
-        else:
-            pts_help= None
+        elif select_mode == 'PerGame':
+            pts_help = 'Average points scored per game.'
+        elif select_mode == 'Accumulated':
+            pts_help = 'Total points scored throughout the season.'
         st.metric(label='Points',
                 value = player_data['pointsScored'],
                 help = pts_help
                 )
 
     with row1_col2:
-        st.metric(label='Rebounds', value = player_data['totalRebounds'])
+        if select_mode == 'PerGame':
+            reb_help = 'Average total rebounds (offensive + defensive) per game.'
+        elif select_mode=='Accumulated':
+            reb_help= 'Total rebounds accumulated throughout the season'
+        elif select_mode == 'PerMinute':
+            reb_help = 'Projected total rebounds per 40 minutes of active play (full FIBA game)'
+        elif select_mode == 'Per100Possesions':
+            reb_help = 'Projected total rebounds per 100 team possessions.'
+        st.metric(label='Rebounds', 
+                  value = player_data['totalRebounds'],
+                  help = reb_help
+                  )
 
     with row1_col3:
-        st.metric(label='Assists', value = player_data['assists'])
+        if select_mode == 'PerGame':
+            ast_help = 'Average assists per game played'
+        elif select_mode=='Accumulated':
+            ast_help= 'Total assists accumulated throughout the season'
+        elif select_mode == 'PerMinute':
+            ast_help = 'Projected assists per 40 minutes of play (full FIBA game)'
+        elif select_mode == 'Per100Possesions':
+            ast_help = 'Projected total assist per 100 team possessions.'
+        st.metric(label='Assists', 
+                  value = player_data['assists'],
+                  help=ast_help
+                  )
 
     with row2_col1:
-        st.metric(label='Turnovers', value = player_data['turnovers'])
+        if select_mode == 'PerGame':
+            trv_help = 'Average balls lost per game played'
+        elif select_mode=='Accumulated':
+            trv_help= 'Total balls lost accumulated throughout the season'
+        elif select_mode == 'PerMinute':
+            trv_help = 'Projected balls lost per 40 minutes of play (full FIBA game)'
+        elif select_mode == 'Per100Possesions':
+            trv_help = 'Projected total balls lost per 100 team possessions.'
+        st.metric(label='Turnovers',
+                  value = player_data['turnovers'],
+                  help= trv_help
+                  )
 
     with row2_col2:
         st.metric(label='Effective Field Goal%', 
@@ -184,4 +220,7 @@ def display_players():
                 help="Performance Index Rating: (PTS + REB + AST + STL + BLK + Fouls Drawn) - (Missed Shots + TO + BLK Suffered + Fouls Committed)"
                 )
 
+    #with row1_col3:
+        #st.metric(label='Steals',
+                  #value = player_data['steals'])
     st.write('---')

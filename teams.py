@@ -142,7 +142,6 @@ def display_teams():
     
 
     # Create a personal metric called hustle index, the teams who plays with the most intesity have an higher index
-    # Formula: (steals + blocks + offensiveRebounds + foulsDrawn) / gamesPlayed
     
     df_team_full['Hustle_Index'] = df_team_full.eval('(steals + blocks + offensiveRebounds + foulsDrawn)/ gamesPlayed')
     
@@ -164,7 +163,8 @@ def display_teams():
             label="Offensive Rating", 
             value=f"{team_data['O_Rating']:.1f}",       
             delta=f"{team_data['O_Rank']}° in the league",  
-            delta_color="off"         
+            delta_color="off",
+            help="Offensive Rating (ORTG): Points scored by the team per 100 possessions. Measures overall offensive efficiency independent of game pace."         
         )
         
     with kpi_col2:
@@ -172,7 +172,8 @@ def display_teams():
             label="Difensive Rating", 
             value=f"{team_data['D_Rating']:.1f}",       
             delta=f"{team_data['D_Rank']}° in the league",  
-            delta_color="off"
+            delta_color="off",
+            help="Defensive Rating (DRTG): Points allowed by the team per 100 possessions. Measures overall defensive efficiency independent of game pace (lower is better)."
         )
         
     with kpi_col3:
@@ -180,9 +181,10 @@ def display_teams():
             label="Hustle Index", 
             value=f"{team_data['Hustle_Index']:.1f}",      
             delta=f"{team_data['Hustle_Rank']}° in the league",  
-            delta_color="off"
+            delta_color="off",
+            help="Hustle Index: Composite score measuring non-boxscore effort. Formula: (steals + blocks + offensiveRebounds + foulsDrawn) / gamesPlayed"
         )
-    st.write('The hustle index is calculated with this formula: (steals + blocks + offensiveRebounds + foulsDrawn) / gamesPlayed')
+
     st.write("---")
 
     # radar chart 
