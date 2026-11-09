@@ -123,7 +123,7 @@ def display_players():
             fig_scoring = px.pie(
                 names= labelz,
                 values = vals,
-                hole = 0.6,
+                hole = 0.35,
                 color_discrete_sequence= euroleague_palette,
 
             )

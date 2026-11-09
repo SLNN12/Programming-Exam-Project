@@ -189,7 +189,7 @@ def display_teams():
 
     # radar chart 
     st.subheader(":orange[Tactical Profile vs League Average]")
-
+    
     #create a copy of the df to use for the radar chart
     df_radar = df_team_full.copy()
 
