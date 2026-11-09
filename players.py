@@ -150,7 +150,7 @@ def display_players():
 
     row1_col1, row1_col2, row1_col3 = st.columns(3)
     row2_col1, row2_col2, row2_col3 = st.columns(3)
-    #row1_col3, row2_col2, row3_col3 = st.columns(3)
+    row3_col1, row3_col2, row3_col3 = st.columns(3)
 
     with row1_col1:
         if select_mode == 'PerMinute':
@@ -220,7 +220,126 @@ def display_players():
                 help="Performance Index Rating: (PTS + REB + AST + STL + BLK + Fouls Drawn) - (Missed Shots + TO + BLK Suffered + Fouls Committed)"
                 )
 
-    #with row1_col3:
-        #st.metric(label='Steals',
-                  #value = player_data['steals'])
+    player_data['stocks'] = player_data['steals'] + player_data['blocks']
+    with row3_col1:
+        st.metric(label='Stocks',
+                value = player_data['stocks'],
+                help = 'Combined Steals plus Blocks'
+                )
+
+    
+    with row3_col2:
+        if select_mode == 'PerGame':
+            mp_help = 'Average minutes played per game'
+        elif select_mode=='Accumulated':
+            mp_help= 'Total minutes played throughout the season'
+        elif select_mode == 'PerMinute':
+            mp_help = 'Standard reference scale (40 minutes active play per full FIBA game)'
+        elif select_mode == 'Per100Possesions':
+            mp_help = 'Average playing time per game, providing sample size context for 100-possession estimates.'
+        st.metric(label = 'Minutes played',
+                value = round(player_data['minutesPlayed'],1),
+                help = mp_help
+                )
+
+    with row3_col3:
+            if select_mode == 'PerGame':
+                fd_help = 'Average fouls drawn per game.'
+            elif select_mode=='Accumulated':
+                fd_help= 'Total fouls drawn throughout the season.'
+            elif select_mode == 'PerMinute':
+                fd_help = 'Projected fouls drawn per 40 minutes of play (full FIBA game).'
+            elif select_mode == 'Per100Possesions':
+                fd_help = 'Projected fouls drawn per 100 team possessions.'
+            st.metric(label = 'Fouls Drawn',
+                    value = player_data['foulsDrawn'],
+                    help = fd_help
+                    )
+
+    
     st.write('---')
+    st.subheader(':orange[Player Comparison Scattter Plot]')
+
+    #mapping 5 scatter presets
+
+    preset_plots = {
+        'Scorer Efficiency (Points vs eFG%)':{
+            'x_col': 'pointsScored',
+            'y_col': 'effectiveFieldGoalPercentage',
+            'x_label' : 'Points',
+            'y_label': 'Effective Field Goal %'
+        },
+        'Volume & Productivity (Minutes vs PIR)':{
+            'x_col' : 'minutesPlayed',
+            'y_col' : 'pir',
+            'x_label' : 'Minutes Played',
+            'y_label' : 'PIR'
+        },
+        'Minutes vs Points':{
+            'x_col' : 'pointsScored',
+            'y_col': 'minutesPlayed',
+            'y_label': 'Minutes Played',
+            'x_label': 'Points'
+        },
+        'Points vs Assists': {
+            'x_col' : 'pointsScored',
+            'y_col': 'assists',
+            'x_label': 'Points',
+            'y_label': 'Assists'
+        },
+        'Defensive Profile( Defensive Rebound vs Stocks)':{
+            'x_col': 'defensiveRebounds',
+            'y_col': 'stocks',
+            'x_label': 'Defensive Rebounds',
+            'y_label': 'Steals + Blocks'
+        }
+    }
+
+    #Selctbox for the scatter
+    selected_preset = st.selectbox(
+        'Select Analytical Scatter Plot',
+        options = list(preset_plots),
+        key='player_scatter_preset'
+    )
+
+    #extract the picked graph fro the dict
+    config = preset_plots[selected_preset]
+
+    #Create dthe dataframe for plotly
+    df_scatter = df_team_players.copy()
+
+    #add stocks column
+    df_scatter['stocks'] = df_scatter['steals']+ df_scatter['blocks']
+
+    #revoering the selected player
+    current_player = st.session_state['saved_player']
+
+    #create the column to highlight the selected player in the graph
+    df_scatter['highlight'] = df_scatter['player.name'].apply(
+        lambda name: 'Selected Player' if name == current_player else 'Other Players'
+    )
+
+    #creation of the scatter plot
+
+    fig_scatter = px.scatter(
+        df_scatter,
+        x=config['x_col'],
+        y=config['y_col'],
+        color = 'highlight',
+        color_discrete_map= {
+            'Selected Player': 'tomato',
+            'Other Players': 'dimgray'
+        },
+        hover_name = 'player.name',
+        labels = {
+            config[ 'x_col']: config['x_label'],
+            config['y_col']: config['y_label']
+        },
+        title = f'{selected_preset} ({select_mode})'
+    )
+
+    fig_scatter.update_traces(marker=dict(size=12, opacity=0.8))
+
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+
