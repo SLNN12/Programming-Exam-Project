@@ -11,7 +11,7 @@ def display_teams():
     header_col1, header_col2, header_col3 = st.columns([2,1,2])
 
     with header_col1:
-        st.subheader(':orange[Team Analysis]')
+        #st.subheader(f':orange[{selected_team}]')
 
         col_sel1, col_sel2 = st.columns(2)
         with col_sel1:

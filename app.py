@@ -38,7 +38,7 @@ if picked_section == '1. Project Overview':
     intro.display_overview()
 
 elif picked_section == '2. Team Analysis':
-    st.title('Team Analysis')
+    st.title(':orange[Team Analysis]')
     st.write(
         """
         In this section, we zoom in on collective performance. 
