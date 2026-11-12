@@ -23,29 +23,20 @@ def display_overview():
     #creating dynamic list
     team_list = ['All Teams'] + sorted(df_teams['club.name'].dropna().unique().tolist())
 
+    #multiselect list for the teams
     with col_sel2:
-        selected_team = st.selectbox(
-            'Select a Team:',
-            options = team_list
-        )
-    #team logos 
-    st.subheader(":orange[──────────────────────────── **Euroleague Teams** ──────────────────────────]")
+        selected_team = st.multiselect(
+            'Select a Team (empty for all teams):',
+            options = team_list,
+            default = []
+        )       
     
+    #creating horiz row with logos divided for the toal number of teams in the picked season
+    cols = st.columns(len(df_teams))
 
-    #searching the column that contains the logo URLs
-    logo_col = None
-    for col in df_teams.columns:
-        if 'image' in col.lower():
-            logo_col = col
-            break
-
-    if logo_col is not None:
-        #creating horiz row with logos
-        cols = st.columns(len(df_teams))
-
-        for index, row in df_teams.iterrows():
-            with cols[index]:
-                st.image(row[logo_col], use_container_width=True)
+    for index, row in df_teams.iterrows():
+        with cols[index]:
+            st.image(row['club.images.crest'], use_container_width=True)
     else:
         st.write('Logo URLs not found in the dataset.')
 
@@ -53,19 +44,19 @@ def display_overview():
 
     total_teams_league = len(df_teams) #obtaining the teams total number
 
-    if selected_team == 'All Teams':
+    if len(selected_team) == 0:
         display_teams = total_teams_league
         display_games = int(total_teams_league * (total_teams_league - 1))
         df_player_active = df_player_all.copy()
     else:
-        display_teams = 1
+        display_teams = len(selected_team)
         display_games= (total_teams_league -1) *2 #games played by 1 team
 
-        #gain the team code from standing dataset
-        team_code = df_teams[df_teams['club.name']== selected_team]['club.code'].values[0]
+        #gain the team or teams code from standing dataset based on the selection
+        team_code = df_teams[df_teams['club.name'].isin(selected_team)]['club.code'].tolist()
 
         #filter players using team code
-        df_player_active = df_player_all[df_player_all['player.team.code']== team_code].copy()
+        df_player_active = df_player_all[df_player_all['player.team.code'].isin(team_code)].copy()
 
 
         
@@ -108,10 +99,10 @@ def display_overview():
 
     if not df_trend.empty:
         #graph filter
-        if selected_team == 'All Teams':
+        if len(selected_team) == 0:
             df_trend_active = df_trend.copy()
         else:
-            df_trend_active = df_trend[df_trend['club.name']==selected_team].copy()
+            df_trend_active = df_trend[df_trend['club.name'].isin(selected_team)].copy()
         team_col = 'club.name'
         rank_col = 'position'
 
@@ -124,20 +115,13 @@ def display_overview():
         )
 
         #creating the graph
-
-        #deciding the color by the filter
-        if selected_team == 'All Teams':
-            chart_colors = px.colors.qualitative.Plotly
-        else:
-            chart_colors = ['orange']
         fig = px.line(
             df_trend_active, 
             x='Round',
             y=rank_col,
             color=team_col,
             text = 'Line_Label',
-            markers=True,
-            color_discrete_sequence = chart_colors
+            markers=True
         )
 
         #moving it to the right to be readable
