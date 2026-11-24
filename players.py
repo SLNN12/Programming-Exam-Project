@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from data_loader import load_player_stats 
+from player_type_ml import get_player_arctype
+
 
 def display_players():
     st.write('---')
@@ -28,6 +30,7 @@ def display_players():
 
         with st.spinner('Loading Player Stats...'):
             df_players = load_player_stats(season, select_mode)
+            df_players = get_player_arctype(df_players)
 
         team_list = ['All Teams'] + sorted(df_players['player.team.name'].dropna().unique().tolist())
 
@@ -77,7 +80,7 @@ def display_players():
 
     #isolate player data
     player_data = df_team_players[df_team_players['player.name'] == select_player].iloc[0]
-
+    player_type = player_data['archetype']
     with header_col2:
         st.write('')
         st.write('')
@@ -140,7 +143,7 @@ def display_players():
             )
 
             st.plotly_chart(fig_scoring, use_container_width= True)
-
+        st.markdown(f'### Type of player: {player_type}')
 
     st.write('---')
 

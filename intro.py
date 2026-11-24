@@ -37,8 +37,7 @@ def display_overview():
     for index, row in df_teams.iterrows():
         with cols[index]:
             st.image(row['club.images.crest'], use_container_width=True)
-    else:
-        st.write('Logo URLs not found in the dataset.')
+
 
     #KPI
 
@@ -92,7 +91,7 @@ def display_overview():
 
     #displaying standings graph
 
-    st.subheader(':orange[Standings Evolution Over the Season]')
+    st.subheader(':red[Standings Evolution Over the Season]')
 
     with st.spinner("Downloading EuroLeague Standings Trend Data..."): 
         df_trend = load_standings_trend(selected_season, total_teams_league)
