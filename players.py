@@ -43,7 +43,7 @@ def display_players():
             #merging the archetype column to the main df
             df_players = pd.merge(
                 df_players, 
-                df_ml_result,
+                df_ml_result[['archetype']],
                 left_on='player.code',
                 right_index=True,
                 how='left'
@@ -130,7 +130,7 @@ def display_players():
 
         val_2p = float(str(raw_2p).replace('%', '') if pd.notna(raw_2p) else 0.0)
         val_3p = float(str(raw_3p).replace('%', '') if pd.notna(raw_3p) else 0.0)
-        val_ft = float(str(raw_ft).replace('%', '') if pd.notna(raw_) else 0.0)
+        val_ft = float(str(raw_ft).replace('%', '') if pd.notna(raw_ft) else 0.0)
 
         col_logo, col_donut = st.columns(2)
 
