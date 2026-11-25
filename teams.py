@@ -106,7 +106,7 @@ def display_teams():
             return 0.0
         raw_str = str(val).strip()
         has_pct_symbol = '%' in raw_str
-        val_str = raw.str.replace('%', '').strip()
+        val_str = raw_str.replace('%', '').strip()
         try:
             num = float(val_str)
             if is_pct and not has_pct_symbol and 0.0 < num <= 1.0:
