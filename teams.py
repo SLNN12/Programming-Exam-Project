@@ -87,41 +87,42 @@ def display_teams():
     st.write('---')
 
 
-    cols_to_num = [
-            # Base metrics
-            'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted', 
-            'offensiveRebounds', 'defensiveRebounds', 'turnovers', 'turnovers_opp_trad',
-            'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed',
-            
-            # Metric for the Offensive Radar
-            'effectiveFieldGoalPercentage', 
-            'assistsRatio', 
-            'offensiveReboundsPercentage', 
-            'turnoversRatio',
-            
-            # Metric for the Defensive Radar
-            'effectiveFieldGoalPercentage_opp_adv', 
-            'defensiveReboundsPercentage', 
-            'turnoversRatio_opp_adv', 
-            'twoPointersPercentage_opp_trad'
+    count_cols = [
+        'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted',
+        'offensiveRebounds', 'defensiveRebounds', 'turnovers', 'turnovers_opp_trad',
+        'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed'
+    ]
+
+    pct_cols = [
+        'effectiveFieldGoalPercentage', 'assistsRatio',
+        'offensiveReboundsPercentage', 'turnoversRatio',
+        'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage',
+        'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad'
         ]
 
     #func to transform numeric metric in % metric
-    def clean_numeric_value(val):
+    def clean_numeric_value(val, is_pct=False):
         if pd.isna(val):
             return 0.0
-        val_str =str(val).replace('%', '').strip()
+        raw_str = str(val).strip()
+        has_pct_symbol = '%' in raw_str
+        val_str = raw.str.replace('%', '').strip()
         try:
             num = float(val_str)
-            #if the number is a decimal between 0 and 1, took it in scale 0-100
-            if 0.0<=num <=1.0:
+            if is_pct and not has_pct_symbol and 0.0 < num <= 1.0:
                 return num*100
             return num
         except ValueError:
-            return 0.0
-    for col in cols_to_num:
+            return 0.0 
+
+    for col in count_cols:
         if col in df_team_full.columns:
-            df_team_full[col] = df_team_full[col].apply(clean_numeric_value)
+            df_team_full[col] = df_team_full[col].apply(clean_numeric_value, is_pct= False)
+
+    for col in pct_cols:
+        if col in df_team_full.columns:
+            df_team_full[col] = df_team_full[col].apply(clean_numeric_value, is_pct=True)
+
 
     # Creating Field goal atttempted columns
     df_team_full['FGA'] = df_team_full['twoPointersAttempted'] + df_team_full['threePointersAttempted']

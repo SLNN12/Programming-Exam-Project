@@ -1,47 +1,36 @@
-def cluster_player_archetype(df_pca, df_ml, n_clusters=4):
-    kmeans = KMeans(n_clusters=n_clusters, random_state=12)
-    df_ml['Cluster_ID'] = kmeans.fit_predict(df_pca)
-
-    # Aggiungiamo 'assists' anche alle medie dei centroidi
-    numeric_features = [
-        'pointsScored', 'assists', 'assistsRatio', 'reboundsPercentage',
-        'blocks', 'steals', 'turnoversRatio',
-        'pointsFromThreePointersPercentage', 'freeThrowsRate'
+count_cols = [
+        'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted',
+        'offensiveRebounds', 'defensiveRebounds', 'turnovers', 'turnovers_opp_trad',
+        'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed'
     ]
-    cluster_means = df_ml.groupby('Cluster_ID')[numeric_features].mean()
 
-    # Standardizzazione Z-score blindata contro eventuali divisioni per zero
-    means_norm = ((cluster_means - cluster_means.mean()) / cluster_means.std()).fillna(0)
-    all_clusters = list(range(n_clusters))
+    pct_cols = [
+        'effectiveFieldGoalPercentage', 'assistsRatio',
+        'offensiveReboundsPercentage', 'turnoversRatio',
+        'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage',
+        'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad'
+    ]
 
-    # 1. Rim Protector: rimbalzi + stoppate
-    rim_score = means_norm['reboundsPercentage'] + means_norm['blocks']
-    rim_protector_cluster = rim_score.idxmax()
+    # Funzione di pulizia: scala x100 SOLO se è una colonna percentuale senza simbolo '%'
+    def clean_numeric_value(val, is_pct=False):
+        if pd.isna(val):
+            return 0.0
+        raw_str = str(val).strip()
+        has_pct_symbol = '%' in raw_str
+        val_str = raw_str.replace('%', '').strip()
+        try:
+            num = float(val_str)
+            if ___ and not has_pct_symbol and 0.0 < num <= 1.0:  # INDIZIO 1: verifica il parametro booleano is_pct
+                return num * 100
+            return num
+        except ValueError:
+            return 0.0
 
-    # 2. Playmaker: volume assist + assistsRatio, penalizzando leggermente i rimbalzi per escludere le ali
-    remain_cl = [c for c in all_clusters if c != rim_protector_cluster]
-    pm_scores = (
-        means_norm.loc[remain_cl, ___] +                  # INDIZIO 2: usa 'assists' (il volume a partita)
-        means_norm.loc[remain_cl, 'assistsRatio'] -
-        (0.3 * means_norm.loc[remain_cl, 'reboundsPercentage'])
-    )
-    pm_cluster = pm_scores.idxmax()
+    for col in count_cols:
+        if col in df_team_full.columns:
+            df_team_full[col] = df_team_full[col].apply(clean_numeric_value, is_pct=___)  # INDIZIO 2: i conteggi non sono percentuali (False)
 
-    # 3. Scorer: punti segnati + capacità di guadagnare tiri liberi
-    remain_cl = [c for c in ___ if c != pm_cluster]       # INDIZIO 3: filtra da remain_cl (non da all_clusters)
-    scorer = means_norm.loc[remain_cl, 'pointsScored'] + (0.5 * means_norm.loc[remain_cl, 'freeThrowsRate'])
-    scorer_cluster = scorer.idxmax()
+    for col in pct_cols:
+        if col in df_team_full.columns:
+            df_team_full[col] = df_team_full[col].apply(clean_numeric_value, is_pct=___)  # INDIZIO 3: qui stiamo pulendo le percentuali (True)
 
-    # 4. 3 and D: l'unico cluster rimasto (tiratori perimetrali + difesa + basso utilizzo)
-    three_and_D_cluster = [c for c in ___ if c != scorer_cluster][0]  # INDIZIO 4: prendi l'ultimo da remain_cl
-
-    archetype_dict = {
-        pm_cluster: 'Playmaker',
-        rim_protector_cluster: 'Rim protector',
-        scorer_cluster: 'Scorer',
-        three_and_D_cluster: '3 and D'
-    }
-
-    df_ml['archetype'] = df_ml['Cluster_ID'].map(archetype_dict)
-
-    return df_ml

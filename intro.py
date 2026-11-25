@@ -21,7 +21,7 @@ def display_overview():
         df_teams, df_player_all = load_data(selected_season)
     
     #creating dynamic list
-    team_list = ['All Teams'] + sorted(df_teams['club.name'].dropna().unique().tolist())
+    team_list = sorted(df_teams['club.name'].dropna().unique().tolist())
 
     #multiselect list for the teams
     with col_sel2:

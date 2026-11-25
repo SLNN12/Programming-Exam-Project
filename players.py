@@ -30,7 +30,27 @@ def display_players():
 
         with st.spinner('Loading Player Stats...'):
             df_players = load_player_stats(season, select_mode)
-            df_players = get_player_arctype(df_players)
+
+            #dataset for the ML model
+            if select_mode =='PerGame':
+                df_for_ml = df_players.copy()
+            else: 
+                df_for_ml = get_player_arctype(season, 'PerGame')
+
+            #Calc the archetype on the per game data
+            df_ml_result = get_player_arctype(df_for_ml)
+
+            #merging the archetype column to the main df
+            df_players = pd.merge(
+                df_players, 
+                df_ml_result,
+                left_on='player.code',
+                right_index=True,
+                how='left'
+            )
+
+            #filling the Nan value for the archetype (players with < 4 games playes)
+            df_players['archetype'] = df_players['archetype'].fillna('Not enough data')
 
         team_list = ['All Teams'] + sorted(df_players['player.team.name'].dropna().unique().tolist())
 
@@ -60,7 +80,9 @@ def display_players():
         selected_default = player_list[0] if player_list else ''
 
         #if a player was saved search corrispondence
-        if saved_name:
+        if saved_name in player_list:
+            selected_default = saved_name
+        elif saved_name:
             search_word = saved_name.replace(',', '').split()[0].lower()
             for p in player_list:
                 if search_word in p.lower():
@@ -107,8 +129,8 @@ def display_players():
         raw_ft = player_data['pointsFromFreeThrowsPercentage']
 
         val_2p = float(str(raw_2p).replace('%', '') if pd.notna(raw_2p) else 0.0)
-        val_3p = float(str(raw_3p).replace('%', '') if pd.notna(raw_2p) else 0.0)
-        val_ft = float(str(raw_ft).replace('%', '') if pd.notna(raw_2p) else 0.0)
+        val_3p = float(str(raw_3p).replace('%', '') if pd.notna(raw_3p) else 0.0)
+        val_ft = float(str(raw_ft).replace('%', '') if pd.notna(raw_) else 0.0)
 
         col_logo, col_donut = st.columns(2)
 
