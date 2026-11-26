@@ -22,24 +22,8 @@ def display_teams():
             )
         #downloading real stats now that we have the seasons
             #download the data
-    with st.spinner('Downloading Euroleague Data...'):
-        df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv = load_team_stats(selected_season)
-
-        #removing duplicates from the sets
-        cols_to_drop= ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
-
-        df_adv_clean = df_team_adv.drop(columns=[c for c in cols_to_drop if c in df_team_adv.columns])
-        #merging the teams stats
-        df_team_full = pd.merge(df_team_trad, df_adv_clean, on='team.code')
-
-        
-    
-        df_opp_trad_clean = df_team_opp_trad.drop(columns=[c for c in cols_to_drop if c in df_team_opp_trad.columns])
-        df_opp_adv_clean = df_team_opp_adv.drop(columns=[c for c in cols_to_drop if c in df_team_opp_adv.columns])
-        
-        df_team_full = pd.merge(df_team_full, df_opp_trad_clean, on='team.code', suffixes=('', '_opp_trad'))
-        df_team_full = pd.merge(df_team_full, df_opp_adv_clean, on='team.code', suffixes=('', '_opp_adv'))
-
+    with st.spinner('Downloading Euroleague team data...'):
+        df_team_full = load_team_stats(selected_season)
         team_list = sorted(df_team_full['team.name'].dropna().unique().tolist())
     
 
@@ -90,14 +74,16 @@ def display_teams():
     count_cols = [
         'twoPointersAttempted', 'threePointersAttempted', 'freeThrowsAttempted',
         'offensiveRebounds', 'defensiveRebounds', 'turnovers', 'turnovers_opp_trad',
-        'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed'
+        'assists', 'pointsScored', 'steals', 'blocks', 'foulsDrawn', 'gamesPlayed',
+        'offensiveRebounds_pg', 'defensiveRebounds_pg'
     ]
 
     pct_cols = [
         'effectiveFieldGoalPercentage', 'assistsRatio',
         'offensiveReboundsPercentage', 'turnoversRatio',
         'effectiveFieldGoalPercentage_opp_adv', 'defensiveReboundsPercentage',
-        'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad'
+        'turnoversRatio_opp_adv', 'twoPointersPercentage_opp_trad',
+        'threePointersPercentage'
         ]
 
     #func to transform numeric metric in % metric
@@ -151,7 +137,21 @@ def display_teams():
     df_team_full['O_Rank'] = df_team_full['O_Rating'].rank(ascending=False).astype(int)
     df_team_full['D_Rank'] = df_team_full['D_Rating'].rank(ascending=True).astype(int)
     df_team_full['Hustle_Rank'] = df_team_full['Hustle_Index'].rank(ascending=False).astype(int)
+    df_team_full['PTS_Rank'] = df_team_full['pointsScored_pg'].rank(ascending=False).astype(int)
+    df_team_full['OPP_PTS_Rank'] = df_team_full['pointsScored_opp_trad_pg'].rank(ascending=True).astype(int)  
+    df_team_full['threePM_Rank'] = df_team_full['threePointersMade_pg'].rank(ascending=False).astype(int)
+    df_team_full['threeP_Pct_Rank'] = df_team_full['threePointersPercentage'].rank(ascending=False).astype(int)
+    df_team_full['ORB_Rank'] = df_team_full['offensiveRebounds_pg'].rank(ascending=False).astype(int)
+    df_team_full['DRB_Rank'] = df_team_full['defensiveRebounds_pg'].rank(ascending=False).astype(int)
 
+    def rank_color(rank, total_teams):
+        if rank <= 5:
+            return 'normal'       # INDIZIO 1: verde in Streamlit ('normal')
+        elif rank > total_teams - 5:
+            return 'inverse'       # INDIZIO 2: rosso per stringhe senza '-' ('inverse')
+        else:
+            return 'off'       # INDIZIO 3: grigio neutro ('off')
+    
    # KPI CARDS
     # isolate selected team row
     team_data = df_team_full[df_team_full['team.name'] == selected_team].iloc[0]
@@ -164,7 +164,7 @@ def display_teams():
             label="Offensive Rating", 
             value=f"{team_data['O_Rating']:.1f}",       
             delta=f"{team_data['O_Rank']}° in the league",  
-            delta_color="off",
+            delta_color=rank_color(team_data['O_Rank'], total_teams),
             help="Offensive Rating (ORTG): Points scored by the team per 100 possessions. Measures overall offensive efficiency independent of game pace."         
         )
         
@@ -173,7 +173,7 @@ def display_teams():
             label="Difensive Rating", 
             value=f"{team_data['D_Rating']:.1f}",       
             delta=f"{team_data['D_Rank']}° in the league",  
-            delta_color="off",
+            delta_color=rank_color(team_data['D_Rank'], total_teams),
             help="Defensive Rating (DRTG): Points allowed by the team per 100 possessions. Measures overall defensive efficiency independent of game pace (lower is better)."
         )
         
@@ -182,8 +182,64 @@ def display_teams():
             label="Hustle Index", 
             value=f"{team_data['Hustle_Index']:.1f}",      
             delta=f"{team_data['Hustle_Rank']}° in the league",  
-            delta_color="off",
+            delta_color=rank_color(team_data['Hustle_Rank'], total_teams),
             help="Hustle Index: Composite score measuring non-boxscore effort. Formula: (steals + blocks + offensiveRebounds + foulsDrawn) / gamesPlayed"
+        )
+
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    with row2_col1:
+        st.metric(
+            label='Points Scored (PPG)',
+            value = f'{team_data[ 'pointsScored_pg']}',
+            delta = f'{team_data['PTS_Rank']}° in the league',
+            delta_color=rank_color(team_data['PTS_Rank'], total_teams),
+            help= 'Average points scored per game'
+        )
+    with row2_col2:
+        st.metric(
+            label= 'Points Allowed',
+            value=f'{team_data['pointsScored_opp_trad_pg']}',
+            delta=f'{team_data['OPP_PTS_Rank']}° in the league',
+            delta_color=rank_color(team_data['OPP_PTS_Rank'], total_teams),
+            help='Average points allowed per game'
+        )
+
+    with row2_col3:
+        st.metric(
+            label='3-Pointers Made (3PM)',
+            value= f'{team_data['threePointersMade_pg']}',
+            delta = f'{team_data['threePM_Rank']}° in the league',
+            delta_color=rank_color(team_data['threePM_Rank'], total_teams),
+            help='Average three-pointers made per game'
+        )
+
+    row3_col1, row3_col2, row3_col3 = st.columns(3)
+
+    with row3_col1:
+        st.metric(
+            label='Offensive Rebounds',
+            value= f'{team_data['offensiveRebounds_pg']}',
+            delta=f'{team_data['ORB_Rank']}° in the league',
+            delta_color=rank_color(team_data['ORB_Rank'], total_teams),
+            help='Average offensive rebounds per game'
+        )
+
+    with row3_col2:
+        st.metric(
+            label='Defensive Rebounds',
+            value= f'{team_data['defensiveRebounds_pg']}',
+            delta= f'{team_data['DRB_Rank']}° in the league',
+            delta_color= rank_color(team_data['DRB_Rank'], total_teams),
+            help = 'Average defensive rebounds per game'
+        )
+
+    with row3_col3:
+        st.metric(
+            label= '3-Point %',
+            value= f'{team_data['threePointersPercentage']}%',
+            delta=f'{team_data[ 'threeP_Pct_Rank']}° in the league',
+            delta_color=rank_color(team_data['threeP_Pct_Rank'], total_teams),
+            help= 'Three point field goal percentage'
         )
 
     st.write("---")

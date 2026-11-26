@@ -1,56 +1,59 @@
-def _load_single_mode_team_stats(team_api, season, mode):
-    """
-    Scarica e unisce i 4 endpoint (traditional, advanced, opponentsTraditional, opponentsAdvanced)
-    per una singola statistic_mode ('Accumulated' o 'PerGame').
-    """
-    df_trad = team_api.get_team_stats_single_season(
-        endpoint='traditional', season=season, statistic_mode=mode
-    )
-    df_adv = team_api.get_team_stats_single_season(
-        endpoint='advanced', season=season, statistic_mode=mode
-    )
-    df_opp_trad = team_api.get_team_stats_single_season(
-        endpoint='opponentsTraditional', season=season, statistic_mode=mode
-    )
-    df_opp_adv = team_api.get_team_stats_single_season(
-        endpoint='opponentsAdvanced', season=season, statistic_mode=mode
-    )
+# Riga 2: Punti fatti, Punti subiti, Triple segnate per partita
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
 
-    cols_to_drop = ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
+    with row2_col1:
+        st.metric(
+            label="Points Scored (PPG)",
+            value=f"{team_data['pointsScored_pg']:.1f}",
+            delta=f"{team_data['PTS_Rank']}° in the league",
+            delta_color="off",
+            help="Average points scored per game."
+        )
 
-    df_adv_clean = df_adv.drop(columns=[c for c in cols_to_drop if c in df_adv.columns])
-    df_opp_trad_clean = df_opp_trad.drop(columns=[c for c in cols_to_drop if c in df_opp_trad.columns])
-    df_opp_adv_clean = df_opp_adv.drop(columns=[c for c in cols_to_drop if c in df_opp_adv.columns])
+    with row2_col2:
+        st.metric(
+            label="Points Allowed (OPP PPG)",
+            value=f"{team_data['___']:.1f}",  # INDIZIO 6: colonna 'pointsScored_opp_trad_pg'
+            delta=f"{team_data['OPP_PTS_Rank']}° in the league",
+            delta_color="off",
+            help="Average points allowed per game (lower is better)."
+        )
 
-    df_merged = pd.merge(df_trad, df_adv_clean, on='team.code')
-    df_merged = pd.merge(df_merged, df_opp_trad_clean, on='team.code', suffixes=('', '_opp_trad'))
-    df_merged = pd.merge(df_merged, df_opp_adv_clean, on='team.code', suffixes=('', '_opp_adv'))
+    with row2_col3:
+        st.metric(
+            label="3-Pointers Made (3PM)",
+            value=f"{team_data['threePointersMade_pg']:.1f}",
+            delta=f"{team_data['threePM_Rank']}° in the league",
+            delta_color="off",
+            help="Average three-pointers made per game."
+        )
 
-    return df_merged
+    # Riga 3: Percentuale da 3, Rimbalzi offensivi, Rimbalzi difensivi
+    row3_col1, row3_col2, row3_col3 = st.columns(3)
 
+    with row3_col1:
+        st.metric(
+            label="3-Point % (3P%)",
+            value=f"{team_data['threePointersPercentage']:.1f}%",
+            delta=f"{team_data['threeP_Pct_Rank']}° in the league",
+            delta_color="off",
+            help="Three-point field goal percentage."
+        )
 
-@st.cache_data
-def load_team_stats(season):
-    """
-    Restituisce un unico DataFrame con tutte le metriche Accumulated e PerGame (_pg)
-    per traditional, advanced, opponentsTraditional e opponentsAdvanced.
-    """
-    team_api = TeamStats('E')
+    with row3_col2:
+        st.metric(
+            label="Off. Rebounds (ORB)",
+            value=f"{team_data['___']:.1f}",  # INDIZIO 7: colonna 'offensiveRebounds_pg'
+            delta=f"{team_data['ORB_Rank']}° in the league",
+            delta_color="off",
+            help="Average offensive rebounds per game."
+        )
 
-    # 1. Scarichiamo e uniamo i 4 endpoint per entrambe le modalità
-    df_acc = _load_single_mode_team_stats(team_api, season, ___)  # INDIZIO 1: modalità 'Accumulated'
-    df_pg = _load_single_mode_team_stats(team_api, season, ___)   # INDIZIO 2: modalità 'PerGame'
-
-    # 2. Rimuoviamo i metadati duplicati da df_pg prima del merge finale
-    meta_cols = ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
-    df_pg_clean = df_pg.drop(columns=[c for c in meta_cols if c in df_pg.columns])
-
-    # 3. Uniamo Accumulated e PerGame su 'team.code' aggiungendo il suffisso '_pg'
-    df_team_full = pd.merge(
-        df_acc,
-        df_pg_clean,
-        on='team.code',
-        suffixes=('', ___)  # INDIZIO 3: usa '_pg' per distinguere le colonne PerGame
-    )
-
-    return df_team_full
+    with row3_col3:
+        st.metric(
+            label="Def. Rebounds (DRB)",
+            value=f"{team_data['___']:.1f}",  # INDIZIO 8: colonna 'defensiveRebounds_pg'
+            delta=f"{team_data['DRB_Rank']}° in the league",
+            delta_color="off",
+            help="Average defensive rebounds per game."
+        )
