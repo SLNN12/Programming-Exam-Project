@@ -13,7 +13,7 @@ def prepare_player_features(df_players):
 
     df_ml = df_ml.set_index('player.code')
 
-    #features selection, key metrics
+    #features selection, key metricsßßßßß
     features = [
         'assists',
         'turnoversRatio',
@@ -26,12 +26,14 @@ def prepare_player_features(df_players):
         'pointsScored' 
     ]
 
-    df_ml['pointsFromThreePointersPercentage'] = df_ml['pointsFromThreePointersPercentage'].astype(str).str.replace('%', '').astype(float)
-    df_ml['freeThrowsRate'] = df_ml['freeThrowsRate'].astype(str).str.replace('%', '').astype(float)
-    df_ml['threePointRate'] = df_ml['threePointRate'].astype(str).str.replace('%', '').astype(float)
-    df_ml['assistsRatio'] = df_ml['assistsRatio'].astype(str).str.replace('%', '').astype(float)
-    df_ml['turnoversRatio'] = df_ml['turnoversRatio'].astype(str).str.replace('%', '').astype(float)
-    df_ml['reboundsPercentage'] = df_ml['reboundsPercentage'].astype(str).str.replace('%', '').astype(float)
+    pct_cols= ['pointsFromThreePointersPercentage', 'freeThrowsRate', 'assistRatio', 'turnoversRatio', 'reboundsPercentage']
+
+    for col in pct_cols:
+        df_ml[col] = pd.to_numeric(
+            df_ml[col].astype(str).str.replace('%', ''),
+            errors='coerce').fillna(0)
+
+    df_ml[features] = df_ml[features].fillna(0)
 
     #applciation of the scaler
     scaler = RobustScaler()

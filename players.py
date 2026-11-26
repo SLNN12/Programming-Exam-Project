@@ -35,7 +35,7 @@ def display_players():
             if select_mode =='PerGame':
                 df_for_ml = df_players.copy()
             else: 
-                df_for_ml = get_player_arctype(season, 'PerGame')
+                df_for_ml = load_player_stats(season, 'PerGame')
 
             #Calc the archetype on the per game data
             df_ml_result = get_player_arctype(df_for_ml)
