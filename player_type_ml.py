@@ -26,7 +26,7 @@ def prepare_player_features(df_players):
         'pointsScored' 
     ]
 
-    pct_cols= ['pointsFromThreePointersPercentage', 'freeThrowsRate', 'assistRatio', 'turnoversRatio', 'reboundsPercentage']
+    pct_cols= ['pointsFromThreePointersPercentage', 'freeThrowsRate', 'assistsRatio', 'turnoversRatio', 'reboundsPercentage']
 
     for col in pct_cols:
         df_ml[col] = pd.to_numeric(
