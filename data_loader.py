@@ -76,41 +76,55 @@ def load_standings_trend(season, total_teams):
 
 
 #Loading team data
+def load_single_mode_team_stats(team_api, season, mode): #download and merge the 4 endpoint per statistic mode
+    df_trad = team_api.get_team_stats_single_season(
+        endpoint='traditional', season=season, statistic_mode=mode)
+
+    df_adv = team_api.get_team_stats_single_season(
+            endpoint='advanced', season=season, statistic_mode=mode)
+
+    df_opp_adv = team_api.get_team_stats_single_season(
+            endpoint='opponentsAdvanced', season=season, statistic_mode=mode)
+
+    df_opp_trad = team_api.get_team_stats_single_season(
+            endpoint='opponentsTraditional', season=season, statistic_mode=mode)
+
+    #CLANING FROM REDUNDANT COLUMSN
+    cols_to_drop = ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
+
+    df_adv_clean = df_adv.drop(columns=[c for c in cols_to_drop if c in df_adv.columns])
+    df_opp_adv_clean = df_opp_adv.drop(columns=[c for c in cols_to_drop if c in df_opp_adv.columns])
+    df_opp_trad_clean = df_opp_trad.drop(columns=[c for c in cols_to_drop if c in df_opp_trad.columns])
+
+    df_merged = pd.merge(df_trad, df_adv_clean, on='team.code')
+    df_merged = pd.merge(df_merged, df_opp_adv_clean, on='team.code', suffixes=('','_opp_adv'))
+    df_merged = pd.merge(df_merged, df_opp_trad_clean, on='team.code', suffixes=('','_opp_trad'))
+
+    return df_merged
+
 @st.cache_data
 def load_team_stats(season):
-
+    #RETURN A UNIFIED DF WITH BOTH PERGAME AND ACCUMULATED STATS OF THE EUROLEAGUE TEAMS
     team_api = TeamStats('E')
 
-    #traditional stats
-    df_team_trad = team_api.get_team_stats_single_season(
-        endpoint='traditional',
-        season=season,
-        statistic_mode='Accumulated'
+    #download and merge the 4 endpoint for both the modalities
+    df_acc = load_single_mode_team_stats(team_api, season, mode='Accumulated')
+    df_pg = load_single_mode_team_stats(team_api, season, mode='PerGame')
+
+    #remove duplicate metadata from the pg dataframe before the final merge
+    meta_cols = ['team.name', 'team.imageUrl', 'team.tvCodes', 'teamRanking', 'gamesPlayed']
+    df_pg_clean = df_pg.drop(columns=[c for c in meta_cols if c in df_pg.columns])
+
+    #merging accumulated and per game with suffixes for the per game stats
+    df_team_full = pd.merge(
+        df_acc,
+        df_pg_clean,
+        on='team.code',
+        suffixes=('', '_pg')
     )
 
-    #advanced stats
-    df_team_adv= team_api.get_team_stats_single_season(
-        endpoint= 'advanced',
-        season=season,
-        statistic_mode='Accumulated'
-    )
+    return df_team_full
 
-    #defensive traditional stats
-    df_team_opp_trad= team_api.get_team_stats_single_season(
-            endpoint= 'opponentsTraditional',
-            season=season,
-            statistic_mode='Accumulated'
-        )
-
-    #defensive advanced stats
-        #defensive traditional stats
-    df_team_opp_adv= team_api.get_team_stats_single_season(
-            endpoint= 'opponentsAdvanced',
-            season=season,
-            statistic_mode='Accumulated'
-        )
-        
-    return df_team_trad, df_team_adv, df_team_opp_trad, df_team_opp_adv
 
 @st.cache_data
 def load_round_standings(season, round_num):
