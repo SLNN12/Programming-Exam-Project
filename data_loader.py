@@ -160,3 +160,15 @@ def load_player_stats(season, statistic_mode):
     df_full = pd.merge(df_full, df_scoring_cleaned, on='player.code')
 
     return df_full
+
+@st.cache_data
+#creating a more precise df for the player type ML model
+def load_all_season_player_stats(season=(2022,2023,2024,2025,2026)):
+
+    dfs = []
+    for s in season:
+        df_s = load_player_stats(s, 'PerGame')
+        df_s['season'] = s
+        dfs.append(df_s)
+    return pd.concat(dfs, ignore_index=True)
+

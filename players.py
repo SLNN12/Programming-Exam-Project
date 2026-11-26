@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from data_loader import load_player_stats 
+from data_loader import load_player_stats, load_all_season_player_stats
 from player_type_ml import get_player_arctype
 
 
@@ -29,16 +29,12 @@ def display_players():
         )
 
         with st.spinner('Loading Player Stats...'):
+            #load the data for the player stats
             df_players = load_player_stats(season, select_mode)
 
-            #dataset for the ML model
-            if select_mode =='PerGame':
-                df_for_ml = df_players.copy()
-            else: 
-                df_for_ml = load_player_stats(season, 'PerGame')
-
-            #Calc the archetype on the per game data
-            df_ml_result = get_player_arctype(df_for_ml)
+            #load the storic for the Ml model then cluster on the selected season
+            df_all_season = load_all_season_player_stats()
+            df_ml_result = get_player_arctype(df_all_season, season)
 
             #merging the archetype column to the main df
             df_players = pd.merge(

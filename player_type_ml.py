@@ -11,7 +11,7 @@ def prepare_player_features(df_players):
     #anti noise filter, only players with a significant amount of minutes or games played
     df_ml = df_ml[df_ml['gamesPlayed'] > 4]
 
-    df_ml = df_ml.set_index('player.code')
+    df_ml = df_ml.set_index(['player.code', 'season'])
 
     #features selection, key metricsßßßßß
     features = [
@@ -41,6 +41,8 @@ def prepare_player_features(df_players):
     scaled_array = scaler.fit_transform(df_ml[features])
 
     df_scaled = pd.DataFrame(scaled_array, columns = features, index = df_ml.index)
+    #adding weight to the points scored to separate 3 and d or playmaker from scorer
+    df_scaled['pointsScored'] = df_scaled['pointsScored']  * 1.3                                                                                                                                                                                                                                                                           
 
     return df_ml, df_scaled
 
@@ -97,7 +99,7 @@ def cluster_player_archetype(df_pca, df_ml, n_clusters=4):
     #playmaker identification (lot of assit and risk of turnovers)
     remain_cl = [c for c in all_clusters if c!=rim_protector_cluster]
     pm_scores = (
-        means_norm.loc[remain_cl, 'assists'] + 
+        means_norm.loc[remain_cl, 'assists']+ 
         means_norm.loc[remain_cl, 'assistsRatio'] -
         (0.3* means_norm.loc[remain_cl, 'reboundsPercentage'])
     )
@@ -105,7 +107,7 @@ def cluster_player_archetype(df_pca, df_ml, n_clusters=4):
 
     #scorer identification (points scored and free throw rate high)
     remain_cl = [c for c in remain_cl if c != pm_cluster]
-    scorer = means_norm.loc[remain_cl, 'pointsScored'] + (0.5*means_norm.loc[remain_cl, 'freeThrowsRate'])
+    scorer = means_norm.loc[remain_cl, 'pointsScored'] + (0.25*means_norm.loc[remain_cl, 'freeThrowsRate'])
     scorer_cluster = scorer.idxmax()
 
     #last the 3 and D cluster
@@ -122,7 +124,7 @@ def cluster_player_archetype(df_pca, df_ml, n_clusters=4):
 
     return df_ml
 
-def get_player_arctype(df_players_raw, n_clusters=4):
+def get_player_arctype(df_players_raw,target_season, n_clusters=4):
     """"
     master func, execute in sequence, scaling, pca and k means with profiling
     """
@@ -136,4 +138,8 @@ def get_player_arctype(df_players_raw, n_clusters=4):
     #K means cluster
     df_final = cluster_player_archetype(df_pca, df_ml, n_clusters=n_clusters)
 
-    return df_final
+    #extract the selected season and put back player.code as single index
+    df_season = df_final.reset_index()
+    df_season = df_season[df_season['season']== target_season].set_index('player.code')
+
+    return df_season
